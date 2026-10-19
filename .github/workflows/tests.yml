@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test-windows:
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build tests
+        run: msbuild kotte.tests\kotte.tests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m
+        shell: cmd
+
+      - name: Run tests
+        run: build\Debug\kotte.tests.debug.exe
+        shell: cmd
+
+  test-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install raylib build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+              libxcursor-dev libxinerama-dev libxext-dev libwayland-dev \
+              libxkbcommon-dev mesa-common-dev libgl1-mesa-dev
+
+      - name: Install a C++23 compiler
+        run: sudo apt-get install -y g++-14
+
+      - name: Configure
+        run: CXX=g++-14 CC=gcc-14 cmake --preset debug
+
+      - name: Build tests
+        run: cmake --build build/debug --target kotte_tests -j
+
+      - name: Run tests
+        run: ctest --preset debug --output-on-failure
+
+  test-macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset debug
+
+      - name: Build tests
+        run: cmake --build build/debug --target kotte_tests -j
+
+      - name: Run tests
+        run: ctest --preset debug --output-on-failure
