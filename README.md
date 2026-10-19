@@ -62,3 +62,53 @@ Delete this section for a G submission. For VG, pose a focused engineering quest
 [When is your approach appropriate, what limits it, and when might an alternative become preferable? Base the conclusion on your evidence. Confirming that the current approach is suitable is a valid result.]
 
 <!-- Submission: commit and push this README with your source to GitHub or the internal Gitea server. Submit the final commit link and a runnable Release ZIP from that version in Studium. Ensure the teacher can access the repository throughout assessment. -->
+
+## Building and running (Windows)
+
+Windows keeps using `kotte.slnx` / the `.vcxproj` files, so everything should work out of the box.
+
+## Building and running (Linux/macOS)
+
+On Linux and macOS, build with CMake.
+
+**Prerequisites**
+
+- CMake 3.21 or newer.
+- A C++23 compiler: GCC 14+, Clang 18+ (with libc++), or a recent Xcode/AppleClang on macOS.
+- raylib, either already installed on the system
+  - On macOS use `brew install raylib` or left unset. CMake will download and build it from source automatically.
+  - On Ubuntu Linux, building raylib from source needs its window/audio dependencies installed first:
+  ```
+  sudo apt install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+                      libxcursor-dev libxinerama-dev libxext-dev libwayland-dev \
+                      libxkbcommon-dev mesa-common-dev libgl1-mesa-dev
+  ```
+
+**Configure and build**
+
+```
+cmake --preset debug
+cmake --build build/debug
+```
+
+If the default compiler on your system doesn't support C++23 yet, point CMake at a newer one explicitly (and remove any previous `build/` directory first, since the compiler choice is cached):
+
+```
+rm -rf build
+CXX=g++-14 CC=gcc-14 cmake --preset debug
+cmake --build build/debug
+```
+
+Use the `release` preset instead of `debug` for an optimized build.
+
+**Run**
+
+```
+./build/debug/bin/kotte
+```
+
+**Run the tests**
+
+```
+ctest --preset debug
+```
