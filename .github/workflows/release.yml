@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # Quick sanity gate: if the platform-independent game logic doesn't pass
+  # its tests, don't spend time building/releasing binaries for 5 platforms.
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install raylib build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+              libxcursor-dev libxinerama-dev libxext-dev libwayland-dev \
+              libxkbcommon-dev mesa-common-dev libgl1-mesa-dev
+
+      - name: Install a C++23 compiler
+        run: sudo apt-get install -y g++-14
+
+      - name: Configure
+        run: CXX=g++-14 CC=gcc-14 cmake --preset debug
+
+      - name: Build tests
+        run: cmake --build build/debug --target kotte_tests -j
+
+      - name: Run tests
+        run: ctest --preset debug --output-on-failure
+
+  build-windows:
+    needs: test
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        run: msbuild kotte\kotte.vcxproj /p:Configuration=Release /p:Platform=x64 /m
+        shell: cmd
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item build\Release\kotte.release.exe dist\kotte.exe
+          Compress-Archive -Path dist\kotte.exe -DestinationPath kotte-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotte-windows-x64
+          path: kotte-windows-x64.zip
+
+  build-linux:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install raylib build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+              libxcursor-dev libxinerama-dev libxext-dev libwayland-dev \
+              libxkbcommon-dev mesa-common-dev libgl1-mesa-dev
+
+      - name: Install a C++23 compiler
+        run: sudo apt-get install -y g++-14
+
+      - name: Configure
+        run: CXX=g++-14 CC=gcc-14 cmake --preset release
+
+      - name: Build
+        run: cmake --build build/release --target kotte -j
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp build/release/bin/kotte dist/
+          tar -C dist -czf kotte-linux-${{ matrix.arch }}.tar.gz kotte
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotte-linux-${{ matrix.arch }}
+          path: kotte-linux-${{ matrix.arch }}.tar.gz
+
+  build-macos:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, arm64]
+    # GitHub's free macOS runners are Apple Silicon only; Xcode's compiler
+    # cross-compiles for x86_64 natively, so both architectures are built
+    # here via CMAKE_OSX_ARCHITECTURES instead of needing an Intel runner.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset release -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+
+      - name: Build
+        run: cmake --build build/release --target kotte -j
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp build/release/bin/kotte dist/
+          tar -C dist -czf kotte-macos-${{ matrix.arch }}.tar.gz kotte
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotte-macos-${{ matrix.arch }}
+          path: kotte-macos-${{ matrix.arch }}.tar.gz
+
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # "latest" is reused every run. As a draft, it never creates a
+          # real git tag (that only happens if/when it's published), so
+          # deleting the previous draft here has nothing to clean up.
+          gh release delete latest --repo "${{ github.repository }}" --yes || true
+
+          gh release create latest \
+              artifacts/*/*.zip artifacts/*/*.tar.gz \
+              --repo "${{ github.repository }}" \
+              --draft \
+              --title "Latest build" \
+              --notes "Automated build from commit ${{ github.sha }}"
