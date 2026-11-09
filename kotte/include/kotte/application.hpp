@@ -37,6 +37,8 @@ namespace kotte
             int window_width,
             int window_height,
             std::string_view title,
+            int tile_map_width,
+            int tile_map_height,
             std::uint64_t seed,
             int target_fps = 0);
 
@@ -143,6 +145,8 @@ namespace kotte
         Window window_; // Constructed first, destroyed last.
         Camera camera_;
         Random random_;
+        int room_width_;
+        int room_height_;
         TileMap map_;
         EntityStore entities_;
         std::vector<EntityHandle> enemy_handles_;
