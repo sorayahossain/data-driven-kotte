@@ -4,7 +4,6 @@
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
-#include <cstdint>
 #include <exception>
 #include <fstream>
 #include <stdexcept>
@@ -29,12 +28,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char** argv){
 
         const quicktype::Config config = config_json.get<quicktype::Config>();
 
-        kotte::Application app{
-            1280, 720, "Kotte",
-            static_cast<int>(config.get_tile_map_width()),
-            static_cast<int>(config.get_tile_map_height()),
-            static_cast<std::uint64_t>(config.get_seed())
-        };
+        kotte::Application app{1280, 720, "Kotte", config};
         app.run();
     } catch(const std::exception& error){
         TraceLog(LOG_ERROR, "%s", error.what());

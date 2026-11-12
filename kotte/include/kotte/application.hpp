@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kotte/camera.hpp"
+#include "kotte/config.hpp"
 #include "kotte/entity.hpp"
 #include "kotte/entity_store.hpp"
 #include "kotte/random.hpp"
@@ -37,9 +38,7 @@ namespace kotte
             int window_width,
             int window_height,
             std::string_view title,
-            int tile_map_width,
-            int tile_map_height,
-            std::uint64_t seed,
+            const quicktype::Config& config,
             int target_fps = 0);
 
         Application(const Application&) = delete;
@@ -145,8 +144,6 @@ namespace kotte
         Window window_; // Constructed first, destroyed last.
         Camera camera_;
         Random random_;
-        int room_width_;
-        int room_height_;
         TileMap map_;
         EntityStore entities_;
         std::vector<EntityHandle> enemy_handles_;
@@ -159,7 +156,7 @@ namespace kotte
         std::vector<DestroyEntityRequest> destroy_entity_requests_;
         std::vector<BlastEffect> blast_effects_;
         CollisionDiagnostics collision_diagnostics_;
-        std::uint64_t seed_;
+        quicktype::Config config_;
         EntityHandle player_handle_;
         bool exit_requested_ = false;
     };
