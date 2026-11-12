@@ -1,4 +1,5 @@
 #include "kotte/application.hpp"
+#include "kotte/config.hpp"
 
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
@@ -23,14 +24,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]]  char** argv){
             throw std::runtime_error{"Could not open config/config.json"};
         }
 
-        const nlohmann::json config = nlohmann::json::parse(config_file);
-        validator.validate(config);
+        const nlohmann::json config_json = nlohmann::json::parse(config_file);
+        validator.validate(config_json);
 
-        const int tile_map_width = config.at("tile_map_width").get<int>();
-        const int tile_map_height = config.at("tile_map_height").get<int>();
-        const std::uint64_t seed = config.at("seed").get<std::uint64_t>();
+        const quicktype::Config config = config_json.get<quicktype::Config>();
 
-        kotte::Application app{1280, 720, "Kotte", tile_map_width, tile_map_height, seed};
+        kotte::Application app{
+            1280, 720, "Kotte",
+            static_cast<int>(config.get_tile_map_width()),
+            static_cast<int>(config.get_tile_map_height()),
+            static_cast<std::uint64_t>(config.get_seed())
+        };
         app.run();
     } catch(const std::exception& error){
         TraceLog(LOG_ERROR, "%s", error.what());
