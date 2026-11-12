@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="include\kotte\application.hpp" />
     <ClInclude Include="include\kotte\camera.hpp" />
+    <ClInclude Include="include\kotte\config.hpp" />
     <ClInclude Include="include\kotte\entity.hpp" />
     <ClInclude Include="include\kotte\entity_handle.hpp" />
     <ClInclude Include="include\kotte\entity_store.hpp" />
