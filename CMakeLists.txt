@@ -30,6 +30,20 @@ target_include_directories(cpp_prngs INTERFACE ${CMAKE_SOURCE_DIR}/vendor/cpp_pr
 add_library(nlohmann_json INTERFACE)
 target_include_directories(nlohmann_json INTERFACE ${CMAKE_SOURCE_DIR}/vendor/nlohmann_json/include)
 
+# --- vendor/json_schema_validator -----------------------------------------
+# Unlike nlohmann_json, this one isn't header-only, so its sources are
+# compiled into a small static library.
+add_library(nlohmann_json_schema_validator STATIC
+    vendor/json_schema_validator/src/json-patch.cpp
+    vendor/json_schema_validator/src/json-schema-draft7.json.cpp
+    vendor/json_schema_validator/src/json-uri.cpp
+    vendor/json_schema_validator/src/json-validator.cpp
+    vendor/json_schema_validator/src/smtp-address-validator.cpp
+    vendor/json_schema_validator/src/string-format-check.cpp
+)
+target_include_directories(nlohmann_json_schema_validator PUBLIC ${CMAKE_SOURCE_DIR}/vendor/json_schema_validator/src)
+target_link_libraries(nlohmann_json_schema_validator PUBLIC nlohmann_json)
+
 # --- vendor/raylib -------------------------------------------------------
 # The repository only ships prebuilt Windows binaries for raylib, so on
 # Linux/macOS we use whatever raylib the system already provides (e.g.

@@ -66,7 +66,7 @@
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>.\include;..\vendor\raylib\include;..\vendor\cpp_prngs\include;..\vendor\nlohmann_json\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\include;..\vendor\raylib\include;..\vendor\cpp_prngs\include;..\vendor\nlohmann_json\include;..\vendor\json_schema_validator\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -89,7 +89,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>.\include;..\vendor\raylib\include;..\vendor\cpp_prngs\include;..\vendor\nlohmann_json\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\include;..\vendor\raylib\include;..\vendor\cpp_prngs\include;..\vendor\nlohmann_json\include;..\vendor\json_schema_validator\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
@@ -112,6 +112,37 @@
     <ClCompile Include="src\tile_map.cpp" />
     <ClCompile Include="src\window.cpp" />
   </ItemGroup>
+  <!--
+    vendor/json_schema_validator isn't header-only, so its sources are
+    compiled directly into kotte here. Warnings-as-error is turned off for
+    these files since we don't control this vendored code.
+  -->
+  <ItemGroup>
+    <ClCompile Include="..\vendor\json_schema_validator\src\json-patch.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="..\vendor\json_schema_validator\src\json-schema-draft7.json.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="..\vendor\json_schema_validator\src\json-uri.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="..\vendor\json_schema_validator\src\json-validator.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="..\vendor\json_schema_validator\src\smtp-address-validator.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Include="..\vendor\json_schema_validator\src\string-format-check.cpp">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\kotte\application.hpp" />
     <ClInclude Include="include\kotte\camera.hpp" />
@@ -123,6 +154,11 @@
     <ClInclude Include="include\kotte\spatial_grid.hpp" />
     <ClInclude Include="include\kotte\tile_map.hpp" />
     <ClInclude Include="include\kotte\window.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\vendor\json_schema_validator\src\json-patch.hpp" />
+    <ClInclude Include="..\vendor\json_schema_validator\src\smtp-address-validator.hpp" />
+    <ClInclude Include="..\vendor\json_schema_validator\src\nlohmann\json-schema.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
