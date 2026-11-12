@@ -14,20 +14,19 @@ namespace kotte
         int width,
         int height,
         std::string_view title,
-        int tile_map_width,
-        int tile_map_height,
-        std::uint64_t seed,
+        const quicktype::Config& config,
         int target_fps)
         : window_{width, height, title, target_fps}
         , camera_{window_.size()}
-        , random_{seed}
-        , room_width_{tile_map_width}
-        , room_height_{tile_map_height}
-        , map_{make_room(room_width_, room_height_, random_)}
+        , random_{static_cast<std::uint64_t>(config.get_seed())}
+        , map_{make_room(
+            static_cast<int>(config.get_tile_map_width()),
+            static_cast<int>(config.get_tile_map_height()),
+            random_)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_size_),
             static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
-        , seed_{seed}{
+        , config_{config}{
         populate_entities();
         initialize_enemies();
     }
@@ -542,7 +541,7 @@ namespace kotte
             collision_diagnostics_.contacts);
         DrawText(diagnostics.c_str(), 10, 106, 20, RAYWHITE);
 
-        diagnostics = std::format("seed: {}", seed_);
+        diagnostics = std::format("seed: {}", config_.get_seed());
         DrawText(diagnostics.c_str(), 10, window_.height() - 78, 20, RAYWHITE);
 
         diagnostics = std::format(
