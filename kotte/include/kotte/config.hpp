@@ -17,6 +17,14 @@
 namespace quicktype {
     using nlohmann::json;
 
+    // The quicktype-generated setters below intentionally name their
+    // parameter after the member they assign (e.g. `set_pattern(pattern)`),
+    // which MSVC's /W4 flags as C4458 (shadowing). Harmless here, so it's
+    // suppressed rather than renaming generated code away from its source.
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4458)
+#endif
     class ClassMemberConstraints {
         private:
         std::optional<int64_t> min_int_value;
@@ -61,6 +69,9 @@ namespace quicktype {
         void set_pattern(const std::string &  pattern) { this->pattern = pattern; }
         auto get_pattern() const { return pattern; }
     };
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
     class ClassMemberConstraintException : public std::runtime_error {
         public:
