@@ -11,7 +11,7 @@ add_library(kotte_lib STATIC ${KOTTE_LIB_SOURCES})
 
 target_include_directories(kotte_lib PUBLIC include)
 
-target_link_libraries(kotte_lib PUBLIC raylib cpp_prngs)
+target_link_libraries(kotte_lib PUBLIC raylib cpp_prngs nlohmann_json)
 
 # raylib's own headers (e.g. raymath.h) trigger -Wextra/-Wpedantic warnings;
 # re-declaring them as SYSTEM (and PUBLIC, so it reaches kotte.tests too)

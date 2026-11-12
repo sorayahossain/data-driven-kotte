@@ -26,6 +26,10 @@ endfunction()
 add_library(cpp_prngs INTERFACE)
 target_include_directories(cpp_prngs INTERFACE ${CMAKE_SOURCE_DIR}/vendor/cpp_prngs/include)
 
+# --- vendor/nlohmann_json: header-only library ---------------------------
+add_library(nlohmann_json INTERFACE)
+target_include_directories(nlohmann_json INTERFACE ${CMAKE_SOURCE_DIR}/vendor/nlohmann_json/include)
+
 # --- vendor/raylib -------------------------------------------------------
 # The repository only ships prebuilt Windows binaries for raylib, so on
 # Linux/macOS we use whatever raylib the system already provides (e.g.
