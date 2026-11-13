@@ -1,62 +1,176 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 21,
-        "patch": 0
+	"version": 6,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 25,
+		"patch": 0
+	},
+	"include": [
+		"cmake/presets/bases.json",
+		"cmake/presets/build-types.json"
+	],
+	"configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux native, Debug",
+      "inherits": [ "linux-base", "debug" ]
     },
-    "configurePresets": [
-        {
-            "name": "base",
-            "hidden": true,
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
-            "condition": {
-                "type": "inList",
-                "string": "${hostSystemName}",
-                "list": ["Linux", "Darwin"]
-            }
-        },
-        {
-            "name": "debug",
-            "displayName": "Debug",
-            "inherits": "base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "release",
-            "displayName": "Release",
-            "inherits": "base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "debug",
-            "configurePreset": "debug"
-        },
-        {
-            "name": "release",
-            "configurePreset": "release"
-        }
-    ],
-    "testPresets": [
-        {
-            "name": "debug",
-            "configurePreset": "debug",
-            "output": { "outputOnFailure": true }
-        },
-        {
-            "name": "release",
-            "configurePreset": "release",
-            "output": { "outputOnFailure": true }
-        }
-    ]
+    {
+      "name": "linux-release",
+      "displayName": "Linux native, Release",
+      "inherits": [ "linux-base", "release" ]
+    },
+
+    {
+      "name": "linux-to-windows-debug",
+      "displayName": "Cross: Linux -> Windows, Debug",
+      "inherits": [ "mingw-base", "debug" ]
+    },
+    {
+      "name": "linux-to-windows-release",
+      "displayName": "Cross: Linux -> Windows, Release",
+      "inherits": [ "mingw-base", "release" ]
+    },
+
+    {
+      "name": "windows-debug",
+      "displayName": "Windows native, Debug",
+      "inherits": [ "windows-base", "debug" ]
+    },
+    {
+      "name": "windows-release",
+      "displayName": "Windows native, Release",
+      "inherits": [ "windows-base", "release" ]
+    },
+
+    {
+      "name": "macos-debug",
+      "displayName": "macOS native, Debug",
+      "inherits": [ "macos-base", "debug" ]
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS native, Release",
+      "inherits": [ "macos-base", "release" ]
+    },
+    {
+      "name": "macos-to-windows-debug",
+      "displayName": "Cross: macOS -> Windows, Debug",
+      "inherits": [ "mingw-base", "debug" ]
+    },
+    {
+      "name": "macos-to-windows-release",
+      "displayName": "Cross: macOS -> Windows, Release",
+      "inherits": [ "mingw-base", "release" ]
+    }
+	],
+	"buildPresets": [
+    { "name": "linux-debug", "configurePreset": "linux-debug" },
+    { "name": "linux-release", "configurePreset": "linux-release" },
+    { "name": "windows-debug", "configurePreset": "windows-debug" },
+    { "name": "windows-release", "configurePreset": "windows-release" },
+    { "name": "macos-debug", "configurePreset": "macos-debug" },
+    { "name": "macos-release", "configurePreset": "macos-release" },
+
+    { "name": "linux-to-windows-debug", "configurePreset": "linux-to-windows-debug" },
+    { "name": "linux-to-windows-release", "configurePreset": "linux-to-windows-release" },
+    { "name": "macos-to-windows-debug", "configurePreset": "macos-to-windows-debug" },
+    { "name": "macos-to-windows-release", "configurePreset": "macos-to-windows-release" }
+	],
+	"testPresets": [
+    { "name": "linux-debug", "configurePreset": "linux-debug", "output": { "outputOnFailure": true } },
+    { "name": "linux-release", "configurePreset": "linux-release", "output": { "outputOnFailure": true } },
+    { "name": "windows-debug", "configurePreset": "windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "windows-release", "configurePreset": "windows-release", "output": { "outputOnFailure": true } },
+    { "name": "macos-debug", "configurePreset": "macos-debug", "output": { "outputOnFailure": true } },
+    { "name": "macos-release", "configurePreset": "macos-release", "output": { "outputOnFailure": true } },
+
+    { "name": "linux-to-windows-debug", "configurePreset": "linux-to-windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "linux-to-windows-release", "configurePreset": "linux-to-windows-release", "output": { "outputOnFailure": true } },
+    { "name": "macos-to-windows-debug", "configurePreset": "macos-to-windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "macos-to-windows-release", "configurePreset": "macos-to-windows-release", "output": { "outputOnFailure": true } }
+	],
+	"workflowPresets": [
+    {
+			"name": "linux-debug",
+			"steps": [
+				{ "type": "configure", "name": "linux-debug" },
+				{ "type": "build", "name": "linux-debug" },
+				{ "type": "test", "name": "linux-debug" }
+			]
+		},
+    { 
+			"name": "linux-release",
+			"steps": [
+				{ "type": "configure", "name": "linux-release" },
+				{ "type": "build", "name": "linux-release" },
+				{ "type": "test", "name": "linux-release" }
+			]
+		},
+    { 
+			"name": "windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "windows-debug" },
+				{ "type": "build", "name": "windows-debug" },
+				{ "type": "test", "name": "windows-debug" }
+			]
+		},
+    { 
+			"name": "windows-release",
+			"steps": [
+				{ "type": "configure", "name": "windows-release" },
+				{ "type": "build", "name": "windows-release" },
+				{ "type": "test", "name": "windows-release" }
+			]
+		},
+    { 
+			"name": "macos-debug",
+			"steps": [
+				{ "type": "configure", "name": "macos-debug" },
+				{ "type": "build", "name": "macos-debug" },
+				{ "type": "test", "name": "macos-debug" }
+			]
+		},
+    { 
+			"name": "macos-release",
+			"steps": [
+				{ "type": "configure", "name": "macos-release" },
+				{ "type": "build", "name": "macos-release" },
+				{ "type": "test", "name": "macos-release" }
+			]
+		},
+
+    { 
+			"name": "linux-to-windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "linux-to-windows-debug" },
+				{ "type": "build", "name": "linux-to-windows-debug" },
+				{ "type": "test", "name": "linux-to-windows-debug" }
+			]
+		},
+    { 
+			"name": "linux-to-windows-release",
+			"steps": [
+				{ "type": "configure", "name": "linux-to-windows-release" },
+				{ "type": "build", "name": "linux-to-windows-release" },
+				{ "type": "test", "name": "linux-to-windows-release" }
+			]
+		},
+    { 
+			"name": "macos-to-windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "macos-to-windows-debug" },
+				{ "type": "build", "name": "macos-to-windows-debug" },
+				{ "type": "test", "name": "macos-to-windows-debug" }
+			]
+		},
+    { 
+			"name": "macos-to-windows-release",
+			"steps": [
+				{ "type": "configure", "name": "macos-to-windows-release" },
+				{ "type": "build", "name": "macos-to-windows-release" },
+				{ "type": "test", "name": "macos-to-windows-release" }
+			]
+		}
+	]
 }

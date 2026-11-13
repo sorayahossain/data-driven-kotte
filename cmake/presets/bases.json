@@ -1,0 +1,41 @@
+{
+	"version": 6,
+	"configurePresets": [
+		{
+			"name": "base",
+			"hidden": true,
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": {
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+			}
+		},
+		{
+			"name": "linux-base",
+			"hidden": true,
+			"inherits": "base",
+			"generator": "Unix Makefiles",
+			"condition": {
+				"type": "inList",
+				"string": "${hostSystemName}",
+				"list": ["Linux", "Darwin"]
+			}
+		},
+    {
+      "name": "mingw-base",
+      "hidden": true,
+      "inherits": "linux-base",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-to-windows.cmake"
+    },
+		{
+			"name": "windows-base",
+			"hidden": true,
+			"inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+		},
+		{
+			"name": "macos-base",
+			"hidden": true,
+			"inherits": "linux-base"
+		}
+	]
+}

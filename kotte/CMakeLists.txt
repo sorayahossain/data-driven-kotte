@@ -1,8 +1,25 @@
-# CONFIGURE_DEPENDS makes CMake re-check this glob on every build and
-# reconfigure automatically if files were added/removed under src/.
-file(GLOB_RECURSE KOTTE_LIB_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-)
+#Warning levels
+
+function (set_warning_levels target)
+	if(MSVC)
+		target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
+		if(KOTTE_WARNINGS_AS_ERRORS)
+			target_compile_options(${target} PRIVATE /WX)
+		endif()
+	else()
+		target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+		if(KOTTE_WARNINGS_AS_ERRORS)
+			target_compile_options(${target} PRIVATE -Werror)
+		endif()
+		if(MINGW)
+			target_link_options(${target} PRIVATE -static)
+		endif()
+	endif()
+endfunction()
+
+# kotte_lib
+
+include(cmake/sources.cmake)
 list(REMOVE_ITEM KOTTE_LIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
 # Everything except main.cpp lives in a library so kotte.tests can link it
@@ -13,22 +30,24 @@ target_include_directories(kotte_lib PUBLIC include)
 
 target_link_libraries(kotte_lib PUBLIC raylib cpp_prngs)
 
-# raylib's own headers (e.g. raymath.h) trigger -Wextra/-Wpedantic warnings;
-# re-declaring them as SYSTEM (and PUBLIC, so it reaches kotte.tests too)
-# keeps our own code held to the strict settings below without failing on
-# vendored code we don't control.
-target_include_directories(kotte_lib SYSTEM PUBLIC
-    $<TARGET_PROPERTY:raylib,INTERFACE_INCLUDE_DIRECTORIES>
-)
+#set_warning_levels(kotte_lib)
 
-kotte_set_project_warnings(kotte_lib)
+# kotte
 
-add_executable(kotte src/main.cpp)
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+	message(FATAL_ERROR
+		"src/main.cpp is missing"
+	)
+else()
+	add_executable(${PROJECT_NAME} src/main.cpp)
+endif()
 
-target_link_libraries(kotte PRIVATE kotte_lib)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
+	
+target_link_libraries(${PROJECT_NAME} PRIVATE kotte_lib)
 
-kotte_set_project_warnings(kotte)
+set_warning_levels(${PROJECT_NAME})
 
-set_target_properties(kotte PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
