@@ -89,5 +89,88 @@
     { "name": "linux-to-windows-release", "configurePreset": "linux-to-windows-release", "output": { "outputOnFailure": true } },
     { "name": "macos-to-windows-debug", "configurePreset": "macos-to-windows-debug", "output": { "outputOnFailure": true } },
     { "name": "macos-to-windows-release", "configurePreset": "macos-to-windows-release", "output": { "outputOnFailure": true } }
+	],
+	"workflowPresets": [
+    {
+			"name": "linux-debug",
+			"steps": [
+				{ "type": "configure", "name": "linux-debug" },
+				{ "type": "build", "name": "linux-debug" },
+				{ "type": "test", "name": "linux-debug" }
+			]
+		},
+    { 
+			"name": "linux-release",
+			"steps": [
+				{ "type": "configure", "name": "linux-release" },
+				{ "type": "build", "name": "linux-release" },
+				{ "type": "test", "name": "linux-release" }
+			]
+		},
+    { 
+			"name": "windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "windows-debug" },
+				{ "type": "build", "name": "windows-debug" },
+				{ "type": "test", "name": "windows-debug" }
+			]
+		},
+    { 
+			"name": "windows-release",
+			"steps": [
+				{ "type": "configure", "name": "windows-release" },
+				{ "type": "build", "name": "windows-release" },
+				{ "type": "test", "name": "windows-release" }
+			]
+		},
+    { 
+			"name": "macos-debug",
+			"steps": [
+				{ "type": "configure", "name": "macos-debug" },
+				{ "type": "build", "name": "macos-debug" },
+				{ "type": "test", "name": "macos-debug" }
+			]
+		},
+    { 
+			"name": "macos-release",
+			"steps": [
+				{ "type": "configure", "name": "macos-release" },
+				{ "type": "build", "name": "macos-release" },
+				{ "type": "test", "name": "macos-release" }
+			]
+		},
+
+    { 
+			"name": "linux-to-windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "linux-to-windows-debug" },
+				{ "type": "build", "name": "linux-to-windows-debug" },
+				{ "type": "test", "name": "linux-to-windows-debug" }
+			]
+		},
+    { 
+			"name": "linux-to-windows-release",
+			"steps": [
+				{ "type": "configure", "name": "linux-to-windows-release" },
+				{ "type": "build", "name": "linux-to-windows-release" },
+				{ "type": "test", "name": "linux-to-windows-release" }
+			]
+		},
+    { 
+			"name": "macos-to-windows-debug",
+			"steps": [
+				{ "type": "configure", "name": "macos-to-windows-debug" },
+				{ "type": "build", "name": "macos-to-windows-debug" },
+				{ "type": "test", "name": "macos-to-windows-debug" }
+			]
+		},
+    { 
+			"name": "macos-to-windows-release",
+			"steps": [
+				{ "type": "configure", "name": "macos-to-windows-release" },
+				{ "type": "build", "name": "macos-to-windows-release" },
+				{ "type": "test", "name": "macos-to-windows-release" }
+			]
+		}
 	]
 }
