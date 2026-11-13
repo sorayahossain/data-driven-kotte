@@ -11,8 +11,6 @@ add_executable(kotte_tests ${KOTTE_TESTS_SOURCES})
 # never needs to be listed here by hand.
 target_link_libraries(kotte_tests PRIVATE kotte_lib)
 
-kotte_set_project_warnings(kotte_tests)
-
 set_target_properties(kotte_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )

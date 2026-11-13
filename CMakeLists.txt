@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 
-project(kotte LANGUAGES CXX)
+set(PROJECT_NAME kotte)
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,24 +15,7 @@ endif()
 option(KOTTE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(KOTTE_BUILD_TESTS "Build the kotte test suite" ON)
 
-include(cmake/sources.cmake)
 include(cmake/external.cmake)
-
-# Mirrors the WarningLevel4 / TreatWarningAsError settings used by the MSVC
-# project files, translated to their GCC/Clang equivalents.
-#function(kotte_set_project_warnings target)
-#    target_compile_options(${target} PRIVATE
-#        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
-#        $<$<AND:$<CXX_COMPILER_ID:GNU,Clang,AppleClang>,$<BOOL:${KOTTE_WARNINGS_AS_ERRORS}>>:-Werror>
-#    )
-#endfunction()
-
-#Including the body
-
-add_executable(${PROJECT_NAME} ${APP_SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE
-	"${PROJECT_SOURCE_DIR}/${PROJECT_NAME}/include"
-)
 
 #Including submodules
 
@@ -46,13 +30,6 @@ foreach(dep IN LISTS EXTERNAL_DEPS)
 	add_subdirectory("${EXTERNAL_DIR}/${dep}" SYSTEM) # Because I am not touching the libraries
 endforeach()
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-	${PROJECT_SOURCE_DIR}/src
-)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-	${EXTERNAL_LINK_TARGETS}
-)
-
 #Include interface modules
 
 foreach(dep IN LISTS EXTERNAL_INTERFACES)
@@ -66,22 +43,13 @@ foreach(dep IN LISTS EXTERNAL_INTERFACES)
 	target_include_directories(${dep} SYSTEM INTERFACE "${EXTERNAL_DIR}/${dep}/include")
 endforeach()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-	${EXTERNAL_INTERFACES}
-)
+#Including the body
 
-#Warning levels
+add_subdirectory(kotte)
 
-if(MSVC)
-	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive- /utf-8)
-else()
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
-	if(MINGW)
-		target_link_options(${PROJECT_NAME} PRIVATE -static)
-	endif()
+#Test
+
+if(KOTTE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(kotte.tests)
 endif()
-
-#exe path
-
-include(GNUInstallDirs)
-install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

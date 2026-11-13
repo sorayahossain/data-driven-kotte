@@ -2,7 +2,7 @@
 	"version": 6,
 	"cmakeMinimumRequired": {
 		"major": 3,
-		"minor": 26,
+		"minor": 25,
 		"patch": 0
 	},
 	"include": [
@@ -78,15 +78,16 @@
     { "name": "macos-to-windows-release", "configurePreset": "macos-to-windows-release" }
 	],
 	"testPresets": [
-		{
-			"name": "debug",
-			"configurePreset": "debug",
-			"output": { "outputOnFailure": true }
-		},
-		{
-			"name": "release",
-			"configurePreset": "release",
-			"output": { "outputOnFailure": true }
-		}
+    { "name": "linux-debug", "configurePreset": "linux-debug", "output": { "outputOnFailure": true } },
+    { "name": "linux-release", "configurePreset": "linux-release", "output": { "outputOnFailure": true } },
+    { "name": "windows-debug", "configurePreset": "windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "windows-release", "configurePreset": "windows-release", "output": { "outputOnFailure": true } },
+    { "name": "macos-debug", "configurePreset": "macos-debug", "output": { "outputOnFailure": true } },
+    { "name": "macos-release", "configurePreset": "macos-release", "output": { "outputOnFailure": true } },
+
+    { "name": "linux-to-windows-debug", "configurePreset": "linux-to-windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "linux-to-windows-release", "configurePreset": "linux-to-windows-release", "output": { "outputOnFailure": true } },
+    { "name": "macos-to-windows-debug", "configurePreset": "macos-to-windows-debug", "output": { "outputOnFailure": true } },
+    { "name": "macos-to-windows-release", "configurePreset": "macos-to-windows-release", "output": { "outputOnFailure": true } }
 	]
 }
