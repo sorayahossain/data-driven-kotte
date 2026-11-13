@@ -69,15 +69,16 @@ Windows keeps using `kotte.slnx` / the `.vcxproj` files, so everything should wo
 
 ## Building and running (Linux/macOS)
 
-On Linux and macOS, build with CMake.
+On Windows, Linux and macOS, build with CMake.
+Linux and macOS can also produce Windows builds.
 
 **Prerequisites**
 
-- CMake 3.21 or newer.
+- CMake 3.25 or newer.
 - A C++23 compiler: GCC 14+, Clang 18+ (with libc++), or a recent Xcode/AppleClang on macOS.
 - raylib, either already installed on the system
-  - On macOS use `brew install raylib` or left unset. CMake will download and build it from source automatically.
-  - On Ubuntu Linux, building raylib from source needs its window/audio dependencies installed first:
+  - On Linux, building raylib from source needs its window/audio dependencies installed first:
+  (example for Ubuntu)
   ```
   sudo apt install -y libasound2-dev libx11-dev libxrandr-dev libxi-dev \
                       libxcursor-dev libxinerama-dev libxext-dev libwayland-dev \
@@ -87,16 +88,13 @@ On Linux and macOS, build with CMake.
 **Configure and build**
 
 ```
-cmake --preset debug
-cmake --build build/debug
+cmake --workflow --preset [linux|windows|macos|linux-to-windows|macos-to-windows]-[debug|release]
 ```
 
-If the default compiler on your system doesn't support C++23 yet, point CMake at a newer one explicitly (and remove any previous `build/` directory first, since the compiler choice is cached):
+A real command would looks something like this:
 
 ```
-rm -rf build
-CXX=g++-14 CC=gcc-14 cmake --preset debug
-cmake --build build/debug
+cmake --workflow --preset linux-debug
 ```
 
 Use the `release` preset instead of `debug` for an optimized build.
@@ -104,7 +102,7 @@ Use the `release` preset instead of `debug` for an optimized build.
 **Run**
 
 ```
-./build/debug/bin/kotte
+./build/[build preset]/bin/kotte
 ```
 
 **Run the tests**
