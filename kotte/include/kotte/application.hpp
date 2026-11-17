@@ -39,7 +39,7 @@ namespace kotte
             int window_width,
             int window_height,
             std::string_view title,
-            const quicktype::Config& config,
+            const Config& config,
             int target_fps = 0);
 
         Application(const Application&) = delete;
@@ -143,8 +143,8 @@ namespace kotte
         static constexpr Color wall_color_{0x78, 0x5f, 0x47, 0xff};
 
         Window window_; // Constructed first, destroyed last.
-        Camera camera_;
         Input input_;
+        Camera camera_;
         Random random_;
         TileMap map_;
         EntityStore entities_;
@@ -158,7 +158,7 @@ namespace kotte
         std::vector<DestroyEntityRequest> destroy_entity_requests_;
         std::vector<BlastEffect> blast_effects_;
         CollisionDiagnostics collision_diagnostics_;
-        quicktype::Config config_;
+        Config config_;
         EntityHandle player_handle_;
         bool exit_requested_ = false;
     };
