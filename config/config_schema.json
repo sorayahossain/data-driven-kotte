@@ -2,6 +2,11 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Kotte config",
     "type": "object",
+    "definitions": {
+        "key_name": {
+          // ... define key name properties here
+        }
+    },
     "properties": {
         "tile_map_width": {
             "type": "integer",
@@ -16,6 +21,17 @@
         "seed": {
             "type": "integer",
             "minimum": 1
+        },
+        "input": {
+            "type": "object",
+            "properties": {
+                "move_up": { "$ref": "#/definitions/key_name" },
+                "move_down": { "$ref": "#/definitions/key_name" },
+                "move_left": { "$ref": "#/definitions/key_name" },
+                "move_right": { "$ref": "#/definitions/key_name" },
+                "place_bomb": { "$ref": "#/definitions/key_name" },
+                "quit": { "$ref": "#/definitions/key_name" }
+            }
         }
     },
     "required": ["tile_map_width", "tile_map_height", "seed"]
