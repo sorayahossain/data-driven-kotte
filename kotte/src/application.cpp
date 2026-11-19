@@ -14,26 +14,30 @@ namespace kotte
         int width,
         int height,
         std::string_view title,
-        const quicktype::Config& config,
+        const Config& config,
         int target_fps)
         : window_{width, height, title, target_fps}
+        , input_{config}
         , camera_{window_.size()}
-        , random_{static_cast<std::uint64_t>(config.get_seed())}
+        , random_{static_cast<std::uint64_t>(config.seed)}
         , map_{make_room(
-            static_cast<int>(config.get_tile_map_width()),
-            static_cast<int>(config.get_tile_map_height()),
+            static_cast<int>(config.tile_map_width),
+            static_cast<int>(config.tile_map_height),
             random_)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_size_),
             static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
         , config_{config}{
         input_.bind(Action::quit, {KEY_ESCAPE, KEY_Q});
-        input_.bind(Action::place_bomb, {KEY_SPACE});
         input_.bind(Direction::move,
             {KEY_UP, KEY_W},
             {KEY_DOWN, KEY_S},
             {KEY_LEFT, KEY_A},
             {KEY_RIGHT, KEY_D});
+        // TODO: once move_up, move_down, move_left, move_right and quit are
+        // read from config.input the same way Input's constructor already
+        // reads place_bomb, these two bind() calls can move into Input's
+        // constructor too and disappear from here.
 
         populate_entities();
         initialize_enemies();
@@ -531,14 +535,22 @@ namespace kotte
             collision_diagnostics_.contacts);
         DrawText(diagnostics.c_str(), 10, 106, 20, RAYWHITE);
 
-        diagnostics = std::format("seed: {}", config_.get_seed());
+        diagnostics = std::format("seed: {}", config_.seed);
         DrawText(diagnostics.c_str(), 10, window_.height() - 78, 20, RAYWHITE);
 
         diagnostics = std::format(
             "world: {} x {} tiles | {} total", map_.width(), map_.height(), map_.tile_count());
         DrawText(diagnostics.c_str(), 10, window_.height() - 54, 20, RAYWHITE);
 
-        DrawText("move: WASD/arrows | bomb: Space | quit: Q/Escape", 10, window_.height() - 30, 20, LIGHTGRAY);
+        diagnostics = std::format(
+            "move: {}/{}/{}/{} | bomb: {} | quit: {}",
+            config_.input.move_up,
+            config_.input.move_down,
+            config_.input.move_left,
+            config_.input.move_right,
+            config_.input.place_bomb,
+            config_.input.quit);
+        DrawText(diagnostics.c_str(), 10, window_.height() - 30, 20, LIGHTGRAY);
     }
 
     void Application::populate_entities(){
