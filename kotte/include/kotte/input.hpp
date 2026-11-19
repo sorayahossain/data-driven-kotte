@@ -1,11 +1,19 @@
 #pragma once
 
+#include "kotte/config.hpp"
+
 #include <raylib.h>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace kotte
 {
+    // Maps a key name such as "W" or "SPACE" (one of the values accepted by
+    // config_schema.json's key_name definition) to the matching raylib
+    // KEY_* constant. Throws std::runtime_error for an unrecognized name.
+    [[nodiscard]] int key_from_name(const std::string& name);
+
     enum class Action {
         quit,
         place_bomb
