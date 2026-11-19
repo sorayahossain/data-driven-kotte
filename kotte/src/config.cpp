@@ -10,17 +10,22 @@
 namespace kotte
 {
     void from_json(const nlohmann::json& json, KeyBindings& bindings){
-        // load input from json
+        json.at("place_bomb").get_to(bindings.place_bomb);
+        // TODO: read move_up, move_down, move_left, move_right and quit the same way.
     }
 
     void to_json(nlohmann::json& json, const KeyBindings& bindings){
-        // dump config to json
+        json = nlohmann::json{
+            {"place_bomb", bindings.place_bomb},
+        };
+        // TODO: write move_up, move_down, move_left, move_right and quit the same way.
     }
 
     void from_json(const nlohmann::json& json, Config& config){
         json.at("tile_map_width").get_to(config.tile_map_width);
         json.at("tile_map_height").get_to(config.tile_map_height);
         json.at("seed").get_to(config.seed);
+        json.at("input").get_to(config.input);
     }
 
     void to_json(nlohmann::json& json, const Config& config){
@@ -28,6 +33,7 @@ namespace kotte
             {"tile_map_width", config.tile_map_width},
             {"tile_map_height", config.tile_map_height},
             {"seed", config.seed},
+            {"input", config.input},
         };
     }
 
@@ -65,7 +71,10 @@ namespace kotte
 
         std::ifstream config_file{config_path};
         if(!config_file.is_open()){
-            throw std::runtime_error{"Could not open " + config_path};
+            TraceLog(LOG_WARNING, "%s not found; writing defaults", config_path.c_str());
+            const Config config = default_config();
+            write_config(config_path, config);
+            return config;
         }
 
         const std::string raw_content{
@@ -73,8 +82,19 @@ namespace kotte
             std::istreambuf_iterator<char>{}};
         config_file.close();
 
-        nlohmann::json config_json = nlohmann::json::parse(raw_content);
-        validator.validate(config_json);
-        return config_json.get<Config>();
+        try{
+            nlohmann::json config_json = nlohmann::json::parse(raw_content);
+            validator.validate(config_json);
+            return config_json.get<Config>();
+        } catch(const std::exception& error){
+            TraceLog(
+                LOG_WARNING,
+                "%s is invalid (%s); restoring defaults",
+                config_path.c_str(), error.what());
+
+            const Config config = default_config();
+            write_config(config_path, config);
+            return config;
+        }
     }
 }

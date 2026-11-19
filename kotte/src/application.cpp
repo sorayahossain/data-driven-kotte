@@ -17,6 +17,7 @@ namespace kotte
         const Config& config,
         int target_fps)
         : window_{width, height, title, target_fps}
+        , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
         , map_{make_room(
@@ -28,12 +29,15 @@ namespace kotte
             static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
         , config_{config}{
         input_.bind(Action::quit, {KEY_ESCAPE, KEY_Q});
-        input_.bind(Action::place_bomb, {KEY_SPACE});
         input_.bind(Direction::move,
             {KEY_UP, KEY_W},
             {KEY_DOWN, KEY_S},
             {KEY_LEFT, KEY_A},
             {KEY_RIGHT, KEY_D});
+        // TODO: once move_up, move_down, move_left, move_right and quit are
+        // read from config.input the same way Input's constructor already
+        // reads place_bomb, these two bind() calls can move into Input's
+        // constructor too and disappear from here.
 
         populate_entities();
         initialize_enemies();

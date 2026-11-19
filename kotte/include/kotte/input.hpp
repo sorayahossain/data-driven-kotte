@@ -25,7 +25,7 @@ namespace kotte
 
     class Input final{
     public:
-        Input() = default;
+        explicit Input(const Config& config);
 
         void bind(Action action, std::vector<int> keys);
         void bind(

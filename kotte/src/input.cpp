@@ -34,6 +34,12 @@ namespace kotte
         return it->second;
     }
 
+    Input::Input(const Config& config){
+        bind(Action::place_bomb, {key_from_name(config.input.place_bomb)});
+        // TODO: bind quit and Direction::move from config.input the same way,
+        // once Application stops binding them itself.
+    }
+
     void Input::bind(Action action, std::vector<int> keys){
         actions_[action] = std::move(keys);
     }
