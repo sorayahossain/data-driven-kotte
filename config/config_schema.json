@@ -4,7 +4,15 @@
     "type": "object",
     "definitions": {
         "key_name": {
-          // ... define key name properties here
+            "type": "string",
+            "enum": [
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+                "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+                "ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE",
+                "UP", "DOWN", "LEFT", "RIGHT",
+                "SPACE", "ESCAPE", "ENTER", "TAB", "BACKSPACE",
+                "LEFT_SHIFT", "RIGHT_SHIFT", "LEFT_CONTROL", "RIGHT_CONTROL", "LEFT_ALT", "RIGHT_ALT"
+            ]
         }
     },
     "properties": {
@@ -31,8 +39,9 @@
                 "move_right": { "$ref": "#/definitions/key_name" },
                 "place_bomb": { "$ref": "#/definitions/key_name" },
                 "quit": { "$ref": "#/definitions/key_name" }
-            }
+            },
+            "required": ["move_up", "move_down", "move_left", "move_right", "place_bomb", "quit"]
         }
     },
-    "required": ["tile_map_width", "tile_map_height", "seed"]
+    "required": ["tile_map_width", "tile_map_height", "seed", "input"]
 }
