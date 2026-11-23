@@ -137,11 +137,7 @@ namespace kotte
         static constexpr std::uint8_t bomb_blast_range_ = 3;
         static constexpr float blast_effect_seconds_ = 0.35f;
         static constexpr Color background_color_{0x11, 0x22, 0x33, 0xff};
-        static constexpr Color floor_colors_[3]{
-            Color{0x38, 0x49, 0x52, 0xff},
-            Color{0x3d, 0x4f, 0x59, 0xff},
-            Color{0x42, 0x55, 0x60, 0xff}
-        };
+        // Fallback colors used only if a kind's texture fails to load.
         static constexpr Color player_color_{0xf2, 0xc1, 0x4e, 0xff};
         static constexpr Color bomb_color_{0x20, 0x24, 0x2a, 0xff};
         static constexpr Color blast_color_{0xf2, 0x8f, 0x3b, 0xe8};

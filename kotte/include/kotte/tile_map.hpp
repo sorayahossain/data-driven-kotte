@@ -1,7 +1,5 @@
 #pragma once
 
-#include "kotte/random.hpp"
-
 #include <cstddef>
 #include <cstdint>
 #include <raylib.h>
@@ -16,7 +14,6 @@ namespace kotte
 
     struct Tile final {
         TileType type = TileType::floor;
-        std::uint8_t variation = 0;
     };
 
     struct TileRange final {
@@ -49,5 +46,5 @@ namespace kotte
         std::vector<Tile> tiles_;
     };
 
-    [[nodiscard]] TileMap make_room(int width, int height, Random& random);
+    [[nodiscard]] TileMap make_room(int width, int height);
 }

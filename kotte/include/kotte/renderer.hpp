@@ -19,6 +19,9 @@ namespace kotte
         RenderLayer layer = RenderLayer::world;
         float depth = 0.0f;
         float roundness = 0.0f;
+        // An invalid (default-constructed) texture means "no art yet": the
+        // command falls back to a plain rounded rectangle in `color`.
+        Texture2D texture{};
     };
 
     class Renderer final {

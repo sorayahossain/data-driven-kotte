@@ -71,7 +71,7 @@ namespace kotte
             + static_cast<std::size_t>(x);
     }
 
-    TileMap make_room(int width, int height, Random& random){
+    TileMap make_room(int width, int height){
         TileMap room{width, height};
 
         for(int y = 0; y < room.height(); ++y){
@@ -81,7 +81,6 @@ namespace kotte
                     || x == room.width() - 1 || y == room.height() - 1;
 
                 tile.type = boundary ? TileType::wall : TileType::floor;
-                tile.variation = random.next<3, std::uint8_t>(); //0-2, returned as an uint8_t
             }
         }
 

@@ -23,6 +23,15 @@ namespace kotte
 
     void Renderer::execute() const{
         for(const RenderCommand& command : commands_){
+            if(IsTextureValid(command.texture)){
+                const Rectangle source{
+                    0.0f, 0.0f,
+                    static_cast<float>(command.texture.width),
+                    static_cast<float>(command.texture.height)};
+                DrawTexturePro(command.texture, source, command.screen_bounds, {0.0f, 0.0f}, 0.0f, WHITE);
+                continue;
+            }
+
             DrawRectangleRounded(command.screen_bounds, command.roundness, 6, command.color);
         }
     }
