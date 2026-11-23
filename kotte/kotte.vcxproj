@@ -50,6 +50,7 @@
     <LibraryPath>..\vendor\raylib\lib;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>..\build\$(Configuration)\</OutDir>
@@ -58,6 +59,7 @@
     <LibraryPath>..\vendor\raylib\lib;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -111,6 +113,7 @@
     <ClCompile Include="src\spatial_grid.cpp" />
     <ClCompile Include="src\tile_map.cpp" />
     <ClCompile Include="src\window.cpp" />
+    <ClCompile Include="src\input.cpp" />
   </ItemGroup>
   <!--
     vendor/json_schema_validator isn't header-only, so its sources are
@@ -155,6 +158,7 @@
     <ClInclude Include="include\kotte\spatial_grid.hpp" />
     <ClInclude Include="include\kotte\tile_map.hpp" />
     <ClInclude Include="include\kotte\window.hpp" />
+    <ClInclude Include="include\kotte\input.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\vendor\json_schema_validator\src\json-patch.hpp" />

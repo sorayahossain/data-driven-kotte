@@ -4,6 +4,7 @@
 #include "kotte/config.hpp"
 #include "kotte/entity.hpp"
 #include "kotte/entity_store.hpp"
+#include "kotte/input.hpp"
 #include "kotte/random.hpp"
 #include "kotte/renderer.hpp"
 #include "kotte/spatial_grid.hpp"
@@ -143,6 +144,7 @@ namespace kotte
 
         Window window_; // Constructed first, destroyed last.
         Camera camera_;
+        Input input_;
         Random random_;
         TileMap map_;
         EntityStore entities_;
