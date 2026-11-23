@@ -9,12 +9,132 @@
 #include <utility>
 
 namespace kotte
-{    
+{
+    // Plain global slots, one per texture, filled once by load_textures()
+    // right after the window exists. No caching, no lazy loading, nothing
+    // clever - that's deliberate for now. Proper asset management (a loader
+    // that owns and shares textures by name) comes in a later lesson.
+    Texture2D tile_floor_texture;
+    Texture2D tile_wall_texture;
+    Texture2D crate_entity_texture;
+
+    Texture2D player_up_texture;
+    Texture2D player_up_walk1_texture;
+    Texture2D player_up_walk2_texture;
+    Texture2D player_up_walk3_texture;
+    Texture2D player_down_texture;
+    Texture2D player_down_walk1_texture;
+    Texture2D player_down_walk2_texture;
+    Texture2D player_down_walk3_texture;
+    Texture2D player_left_texture;
+    Texture2D player_left_walk1_texture;
+    Texture2D player_left_walk3_texture;
+    Texture2D player_right_texture;
+    Texture2D player_right_walk1_texture;
+    Texture2D player_right_walk3_texture;
+
+    void load_textures(){
+        tile_floor_texture = LoadTexture("assets/raw/bombman/tile_env4_floor.png");
+        tile_wall_texture = LoadTexture("assets/raw/bombman/tile_env4_wall.png");
+        crate_entity_texture = LoadTexture("assets/raw/bombman/tile_env4_block.png");
+
+        player_up_texture = LoadTexture("assets/raw/bombman/player_up.png");
+        player_up_walk1_texture = LoadTexture("assets/raw/bombman/player_up_walk1.png");
+        player_up_walk2_texture = LoadTexture("assets/raw/bombman/player_up_walk2.png");
+        player_up_walk3_texture = LoadTexture("assets/raw/bombman/player_up_walk3.png");
+        player_down_texture = LoadTexture("assets/raw/bombman/player_down.png");
+        player_down_walk1_texture = LoadTexture("assets/raw/bombman/player_down_walk1.png");
+        player_down_walk2_texture = LoadTexture("assets/raw/bombman/player_down_walk2.png");
+        player_down_walk3_texture = LoadTexture("assets/raw/bombman/player_down_walk3.png");
+        player_left_texture = LoadTexture("assets/raw/bombman/player_left.png");
+        player_left_walk1_texture = LoadTexture("assets/raw/bombman/player_left_walk1.png");
+        player_left_walk3_texture = LoadTexture("assets/raw/bombman/player_left_walk3.png");
+        player_right_texture = LoadTexture("assets/raw/bombman/player_right.png");
+        player_right_walk1_texture = LoadTexture("assets/raw/bombman/player_right_walk1.png");
+        player_right_walk3_texture = LoadTexture("assets/raw/bombman/player_right_walk3.png");
+    }
+
+    // frame: 0 = idle, 1/2/3 = the matching walk pose. Left/right have no
+    // walk2 art; their idle pose doubles as that mid-stride frame.
+    [[nodiscard]] const Texture2D& player_entity_texture(CardinalDirection facing, int frame){
+        switch(facing){
+        case CardinalDirection::up:
+            switch(frame){
+            case 1: return player_up_walk1_texture;
+            case 2: return player_up_walk2_texture;
+            case 3: return player_up_walk3_texture;
+            default: return player_up_texture;
+            }
+        case CardinalDirection::down:
+            switch(frame){
+            case 1: return player_down_walk1_texture;
+            case 2: return player_down_walk2_texture;
+            case 3: return player_down_walk3_texture;
+            default: return player_down_texture;
+            }
+        case CardinalDirection::left:
+            switch(frame){
+            case 1: return player_left_walk1_texture;
+            case 3: return player_left_walk3_texture;
+            default: return player_left_texture;
+            }
+        case CardinalDirection::right:
+            switch(frame){
+            case 1: return player_right_walk1_texture;
+            case 3: return player_right_walk3_texture;
+            default: return player_right_texture;
+            }
+        }
+        return player_down_texture;
+    }
+
+    // Computes a tile texture's destination at its native size, anchored
+    // to the bottom of the cell and centred horizontally. Floor art
+    // matches the cell exactly; wall art stands taller and is meant to
+    // spill upward into the row above, the same "anchored at the base"
+    // idea used for entity sprites taller than their footprint.
+    [[nodiscard]] Rectangle tile_texture_destination(
+        const Texture2D& texture, Vector2 cell_screen_position, int cell_width, int cell_height){
+        return {
+            cell_screen_position.x + (static_cast<float>(cell_width) - static_cast<float>(texture.width)) / 2.0f,
+            cell_screen_position.y + static_cast<float>(cell_height) - static_cast<float>(texture.height),
+            static_cast<float>(texture.width),
+            static_cast<float>(texture.height)
+        };
+    }
+
+    // Resolves player input intent into a facing direction and a
+    // walk-cycle timer; movement blocked by collision still turns the
+    // player to face the attempted direction.
+    void advance_player_animation(Entity& player_entity, Vector2 input_direction, float delta_time){
+        if(input_direction.x == 0.0f && input_direction.y == 0.0f){
+            player_entity.animation_time = 0.0f;
+            return;
+        }
+
+        player_entity.movement_heading = std::abs(input_direction.x) >= std::abs(input_direction.y)
+            ? (input_direction.x > 0.0f ? CardinalDirection::right : CardinalDirection::left)
+            : (input_direction.y > 0.0f ? CardinalDirection::down : CardinalDirection::up);
+        player_entity.animation_time += delta_time;
+    }
+
+    [[nodiscard]] int player_entity_walk_frame(float animation_time){
+        if(animation_time <= 0.0f){
+            return 0;
+        }
+
+        constexpr float frame_seconds = 0.12f;
+        constexpr int walk_cycle[4] = {1, 2, 3, 2};
+        const int step = static_cast<int>(animation_time / frame_seconds) % 4;
+        return walk_cycle[step];
+    }
+
     Application::Application(
         int width,
         int height,
         std::string_view title,
         const Config& config,
+        const Level& level,
         int target_fps)
         : window_{width, height, title, target_fps}
         , input_{config}
@@ -22,11 +142,10 @@ namespace kotte
         , random_{static_cast<std::uint64_t>(config.seed)}
         , map_{make_room(
             static_cast<int>(config.tile_map_width),
-            static_cast<int>(config.tile_map_height),
-            random_)}
+            static_cast<int>(config.tile_map_height))}
         , spatial_grid_{{
-            static_cast<float>(map_.width() * tile_size_),
-            static_cast<float>(map_.height() * tile_size_)}, spatial_cell_size_}
+            static_cast<float>(map_.width() * tile_width_),
+            static_cast<float>(map_.height() * tile_height_)}, spatial_cell_size_}
         , config_{config}{
         input_.bind(Action::quit, {KEY_ESCAPE, KEY_Q});
         input_.bind(Direction::move,
@@ -39,7 +158,8 @@ namespace kotte
         // reads place_bomb, these two bind() calls can move into Input's
         // constructor too and disappear from here.
 
-        populate_entities();
+        load_textures();
+        populate_entities(level);
         initialize_enemies();
     }
 
@@ -131,9 +251,10 @@ namespace kotte
             effect.remaining_seconds = blast_effect_seconds_;
             effect.tile_centres.reserve(static_cast<std::size_t>(fact.blast_range) * 4 + 1);
 
-            const float tile_extent = static_cast<float>(tile_size_);
-            const int origin_column = static_cast<int>(std::floor(fact.world_position.x / tile_extent));
-            const int origin_row = static_cast<int>(std::floor(fact.world_position.y / tile_extent));
+            const int origin_column = static_cast<int>(
+                std::floor(fact.world_position.x / static_cast<float>(tile_width_)));
+            const int origin_row = static_cast<int>(
+                std::floor(fact.world_position.y / static_cast<float>(tile_height_)));
             (void) resolve_blast_tile(effect, origin_column, origin_row);
 
             // The detonating bomb must disappear even if its presentation or
@@ -174,6 +295,7 @@ namespace kotte
         Entity& player_entity = player();
         const Rectangle old_world_bounds = entity_world_bounds(player_entity);
         const Vector2 displacement = direction * (player_speed_ * delta_time);
+        advance_player_animation(player_entity, direction, delta_time);
 
         // Separate proposals let a clear axis slide along a blocked one.
         if(displacement.x != 0.0f){
@@ -183,12 +305,12 @@ namespace kotte
             try_move_player({0.0f, displacement.y});
         }
 
-        const Rectangle player_bounds = entity_world_bounds(player_entity);
+        const Rectangle player_bounds = entity_collision_bounds(player_entity);
         const Vector2 bounds_offset = player_entity.world_position - Vector2{player_bounds.x, player_bounds.y};
-        const float floor_left = static_cast<float>(tile_size_);
-        const float floor_top = static_cast<float>(tile_size_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_size_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_size_);
+        const float floor_left = static_cast<float>(tile_width_);
+        const float floor_top = static_cast<float>(tile_height_);
+        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
+        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
         const Vector2 minimum_position{floor_left + bounds_offset.x, floor_top + bounds_offset.y};
         const Vector2 maximum_position{floor_right - bounds_offset.x, floor_bottom};
         player_entity.world_position = Vector2Clamp(player_entity.world_position, minimum_position, maximum_position);
@@ -331,12 +453,11 @@ namespace kotte
         const Vector2 centre = tile_centre(column, row);
         effect.tile_centres.push_back(centre);
 
-        const float tile_extent = static_cast<float>(tile_size_);
         const Rectangle tile_bounds{
-            static_cast<float>(column) * tile_extent,
-            static_cast<float>(row) * tile_extent,
-            tile_extent,
-            tile_extent
+            static_cast<float>(column) * static_cast<float>(tile_width_),
+            static_cast<float>(row) * static_cast<float>(tile_height_),
+            static_cast<float>(tile_width_),
+            static_cast<float>(tile_height_)
         };
         const SpatialQuery contacts = spatial_grid_.query(tile_bounds);
         bool blocked_by_crate = false;
@@ -395,29 +516,44 @@ namespace kotte
     void Application::render(){
         Frame frame{background_color_};
 
+        // One queue for everything that can occlude or be occluded by a
+        // mover: wall overhangs, blast effects, and entities. Floor never
+        // stands taller than its own cell, so it can never be occluded and
+        // is simply painted first as a flat background, outside the queue.
+        renderer_.clear();
+
         const Rectangle world_view = camera_.world_view();
-        const TileRange visible_tiles = map_.tiles_overlapping(world_view, tile_size_);
+        const TileRange visible_tiles = map_.tiles_overlapping(world_view, tile_width_, tile_height_);
         std::size_t tiles_rendered = 0;
 
         for(int y = visible_tiles.first_row; y < visible_tiles.past_last_row; ++y){
             for(int x = visible_tiles.first_column; x < visible_tiles.past_last_column; ++x){
                 const Tile& tile = map_.at(x, y);
-                const Color color = tile.type == TileType::wall
-                    ? wall_color_
-                    : floor_colors_[tile.variation % 3];
 
                 const Vector2 tile_world_position{
-                    static_cast<float>(x * tile_size_),
-                    static_cast<float>(y * tile_size_)
+                    static_cast<float>(x * tile_width_),
+                    static_cast<float>(y * tile_height_)
                 };
                 const Vector2 tile_screen_position = camera_.world_to_screen(tile_world_position);
 
-                DrawRectangle(
-                    static_cast<int>(std::floor(tile_screen_position.x)),
-                    static_cast<int>(std::floor(tile_screen_position.y)),
-                    tile_size_ - 1,
-                    tile_size_ - 1,
-                    color);
+                if(tile.type == TileType::wall){
+                    const Texture2D& texture = tile_wall_texture;
+                    const Rectangle destination = tile_texture_destination(
+                        texture, tile_screen_position, tile_width_, tile_height_);
+                    // Depth is the tile's own bottom edge in world space, the
+                    // same "anchor row" metric used for entity depth below,
+                    // so a mover standing north of this wall sorts behind its
+                    // overhang instead of always drawing on top of it.
+                    const float depth = static_cast<float>((y + 1) * tile_height_);
+                    renderer_.submit({destination, wall_color_, RenderLayer::world, depth, 0.0f, texture});
+                } else {
+                    const Texture2D& texture = tile_floor_texture;
+                    const Rectangle destination = tile_texture_destination(
+                        texture, tile_screen_position, tile_width_, tile_height_);
+                    const Rectangle source{
+                        0.0f, 0.0f, static_cast<float>(texture.width), static_cast<float>(texture.height)};
+                    DrawTexturePro(texture, source, destination, {0.0f, 0.0f}, 0.0f, WHITE);
+                }
                 ++tiles_rendered;
             }
         }
@@ -425,7 +561,6 @@ namespace kotte
         const SpatialQuery spatial_query = spatial_grid_.query(world_view);
         std::size_t exact_visibility_tests = 0;
         std::size_t visible_entities = 0;
-        renderer_.clear();
 
         // Blast effects are short-lived presentation values, not authoritative
         // entities. Rebuilding commands here keeps their lifetime out of gameplay.
@@ -433,10 +568,10 @@ namespace kotte
         for(const BlastEffect& effect : blast_effects_){
             for(const Vector2 tile_world_centre : effect.tile_centres){
                 Rectangle bounds{
-                    tile_world_centre.x - static_cast<float>(tile_size_) / 2.0f + blast_inset,
-                    tile_world_centre.y - static_cast<float>(tile_size_) / 2.0f + blast_inset,
-                    static_cast<float>(tile_size_) - blast_inset * 2.0f,
-                    static_cast<float>(tile_size_) - blast_inset * 2.0f
+                    tile_world_centre.x - static_cast<float>(tile_width_) / 2.0f + blast_inset,
+                    tile_world_centre.y - static_cast<float>(tile_height_) / 2.0f + blast_inset,
+                    static_cast<float>(tile_width_) - blast_inset * 2.0f,
+                    static_cast<float>(tile_height_) - blast_inset * 2.0f
                 };
                 if(!CheckCollisionRecs(bounds, world_view)){
                     continue;
@@ -476,12 +611,27 @@ namespace kotte
             const RenderLayer layer = visible_candidate->kind == EntityKind::bomb
                 ? RenderLayer::ground
                 : RenderLayer::world;
+            Texture2D texture{};
+            switch(visible_candidate->kind){
+            case EntityKind::crate:
+                texture = crate_entity_texture;
+                break;
+            case EntityKind::player:
+                texture = player_entity_texture(
+                    visible_candidate->movement_heading,
+                    player_entity_walk_frame(visible_candidate->animation_time));
+                break;
+            case EntityKind::bomb:
+            case EntityKind::enemy:
+                break;
+            }
             renderer_.submit({
                 bounds,
                 entity_color(visible_candidate->kind),
                 layer,
                 visible_candidate->world_position.y,
-                entity_roundness(visible_candidate->kind)
+                entity_roundness(visible_candidate->kind),
+                texture
             });
         }
         renderer_.sort();
@@ -553,33 +703,27 @@ namespace kotte
         DrawText(diagnostics.c_str(), 10, window_.height() - 30, 20, LIGHTGRAY);
     }
 
-    void Application::populate_entities(){
+    void Application::populate_entities(const Level& level){
         // Match the generation density so initial creation does not repeatedly
         // relocate slot storage. Handles remain valid even if this estimate grows.
         entities_.reserve(map_.tile_count() / 4);
 
-        const Entity player_entity{EntityKind::player, {tile_size_ * 2.5f, tile_size_ * 2.5f}};
+        const Entity player_entity{
+            EntityKind::player,
+            tile_centre(level.player_column, level.player_row),
+            CardinalDirection::down};
         player_handle_ = entities_.create(player_entity);
         spatial_grid_.insert(player_handle_, entity_world_bounds(player_entity));
 
-        for(int y = 1; y < map_.height() - 1; ++y){
-            for(int x = 1; x < map_.width() - 1; ++x){
-                if((x == 2 && y == 2) || map_.at(x, y).type != TileType::floor || !random_.coin_flip(0.25f)){
+        for(int y = 0; y < map_.height(); ++y){
+            for(int x = 0; x < map_.width(); ++x){
+                const char symbol = level.at(x, y);
+                if(map_.at(x, y).type != TileType::floor || (symbol != 'E' && symbol != '#')){
                     continue;
                 }
 
-                const std::uint8_t kind_roll = random_.next<20, std::uint8_t>();
-                // Week 3's inert bomb markers are no longer needed: every bomb
-                // now enters the world through the explicit lifetime path.
-                if(kind_roll >= 15 && kind_roll < 19){
-                    continue;
-                }
-                const EntityKind kind = kind_roll < 15 ? EntityKind::crate : EntityKind::enemy;
-                const Vector2 world_position{
-                    static_cast<float>(x * tile_size_ + tile_size_ / 2),
-                    static_cast<float>(y * tile_size_ + tile_size_ / 2)
-                };
-                const Entity new_entity{kind, world_position};
+                const EntityKind kind = symbol == '#' ? EntityKind::crate : EntityKind::enemy;
+                const Entity new_entity{kind, tile_floor_anchor(x, y)};
                 const EntityHandle handle = entities_.create(new_entity);
                 spatial_grid_.insert(handle, entity_world_bounds(new_entity));
 
@@ -623,9 +767,12 @@ namespace kotte
     Rectangle Application::entity_world_bounds(const Entity& entity) const noexcept{
         Vector2 size{};
         switch(entity.kind){
-        case EntityKind::player: size = {24.0f, 32.0f}; break;
+        // Matches the bombman asset pack's canvases: player_*.png (60x94) and
+        // tile_env4_block.png (52x67). Bomb/enemy remain placeholders until
+        // their art is wired in.
+        case EntityKind::player: size = {60.0f, 94.0f}; break;
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
-        case EntityKind::crate: size = {36.0f, 48.0f}; break;
+        case EntityKind::crate: size = {52.0f, 67.0f}; break;
         case EntityKind::enemy: size = {28.0f, 30.0f}; break;
         }
 
@@ -639,7 +786,9 @@ namespace kotte
         // broad-phase queries conservatively find every possible contact.
         Vector2 size{};
         switch(entity.kind){
-        case EntityKind::player: size = {20.0f, 16.0f}; break;
+        // Measured from player_*.png's opaque pixels around the feet (~90%
+        // of the 94px canvas height); independent of facing direction.
+        case EntityKind::player: size = {50.0f, 16.0f}; break; // width maxed to tile_width_ - 1px
         case EntityKind::bomb: size = {18.0f, 12.0f}; break;
         case EntityKind::crate: size = {32.0f, 32.0f}; break;
         case EntityKind::enemy: size = {24.0f, 14.0f}; break;
@@ -656,22 +805,22 @@ namespace kotte
         proposed_entity.world_position = proposed_position;
 
         // Room walls are a simple boundary rule in the current map. Test the
-        // complete visual bounds directly before asking the grid about entities.
-        const Rectangle proposed_world_bounds = entity_world_bounds(proposed_entity);
-        const float floor_left = static_cast<float>(tile_size_);
-        const float floor_top = static_cast<float>(tile_size_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_size_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_size_);
-        const bool leaves_room = proposed_world_bounds.x < floor_left
-            || proposed_world_bounds.y < floor_top
-            || proposed_world_bounds.x + proposed_world_bounds.width > floor_right
-            || proposed_world_bounds.y + proposed_world_bounds.height > floor_bottom;
+        // collision footprint directly before asking the grid about entities:
+        // visual bounds can stand taller than a tile and legitimately overlap
+        // a wall's tile row above the entity without a real contact.
+        const Rectangle proposed_collision_bounds = entity_collision_bounds(proposed_entity);
+        const float floor_left = static_cast<float>(tile_width_);
+        const float floor_top = static_cast<float>(tile_height_);
+        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
+        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
+        const bool leaves_room = proposed_collision_bounds.x < floor_left
+            || proposed_collision_bounds.y < floor_top
+            || proposed_collision_bounds.x + proposed_collision_bounds.width > floor_right
+            || proposed_collision_bounds.y + proposed_collision_bounds.height > floor_bottom;
         if(leaves_room){
             ++collision_diagnostics_.boundary_blocks;
             return true;
         }
-
-        const Rectangle proposed_collision_bounds = entity_collision_bounds(proposed_entity);
 
         // Broad phase: query nearby candidates using the proposed bounds.
         const SpatialQuery spatial_query = spatial_grid_.query(proposed_collision_bounds);
@@ -752,17 +901,29 @@ namespace kotte
     }
 
     Vector2 Application::tile_centre(Vector2 world_position) noexcept{
-        const float tile_extent = static_cast<float>(tile_size_);
-        const int column = static_cast<int>(std::floor(world_position.x / tile_extent));
-        const int row = static_cast<int>(std::floor(world_position.y / tile_extent));
+        const int column = static_cast<int>(std::floor(world_position.x / static_cast<float>(tile_width_)));
+        const int row = static_cast<int>(std::floor(world_position.y / static_cast<float>(tile_height_)));
         return tile_centre(column, row);
     }
 
     Vector2 Application::tile_centre(int column, int row) noexcept{
-        const float tile_extent = static_cast<float>(tile_size_);
         return {
-            static_cast<float>(column) * tile_extent + tile_extent / 2.0f,
-            static_cast<float>(row) * tile_extent + tile_extent / 2.0f
+            static_cast<float>(column) * tile_width_ + tile_width_ / 2.0f,
+            static_cast<float>(row) * tile_height_ + tile_height_ / 2.0f
+        };
+    }
+
+    // A placed entity's world_position is its bottom-centre anchor (see
+    // entity_world_bounds/entity_collision_bounds), not the tile's geometric
+    // centre. Spawning crates/enemies at tile_centre left their collision
+    // box covering only the top half of their own tile, leaving the bottom
+    // half walkable and making their render depth read as half a tile too
+    // far north relative to wall tiles (whose depth is their own bottom
+    // edge) - both the walk-through and the wrong occlusion against walls.
+    Vector2 Application::tile_floor_anchor(int column, int row) noexcept{
+        return {
+            static_cast<float>(column) * tile_width_ + tile_width_ / 2.0f,
+            static_cast<float>(row + 1) * tile_height_
         };
     }
 
