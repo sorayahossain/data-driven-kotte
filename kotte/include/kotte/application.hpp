@@ -124,9 +124,13 @@ namespace kotte
         [[nodiscard]] static Vector2 tile_floor_anchor(int column, int row) noexcept;
         [[nodiscard]] static Color entity_color(EntityKind kind) noexcept;
         [[nodiscard]] static float entity_roundness(EntityKind kind) noexcept;
-        static constexpr int tile_size_ = 40;
+        // Matches the native size of the bombman asset pack's floor tiles
+        // (tile_env*_floor.png); wall/block/player art stands taller than a
+        // single tile and is anchored at its base, not squeezed to fit here.
+        static constexpr int tile_width_ = 50;
+        static constexpr int tile_height_ = 45;
         static constexpr int spatial_cell_tiles_ = 8;
-        static constexpr float spatial_cell_size_ = tile_size_ * spatial_cell_tiles_;
+        static constexpr float spatial_cell_size_ = tile_width_ * spatial_cell_tiles_;
         static constexpr float player_speed_ = 240.0f;
         static constexpr float enemy_speed_ = 80.0f;
         static constexpr float bomb_fuse_seconds_ = 2.0f;

@@ -41,16 +41,18 @@ namespace kotte
         return tiles_.at(index(x, y));
     }
 
-    TileRange TileMap::tiles_overlapping(Rectangle world_view, int tile_size) const noexcept{
-        if(tile_size <= 0){
+    TileRange TileMap::tiles_overlapping(
+        Rectangle world_view, int tile_width, int tile_height) const noexcept{
+        if(tile_width <= 0 || tile_height <= 0){
             return {};
         }
 
-        const float tile_extent = static_cast<float>(tile_size);
-        const int first_column = static_cast<int>(std::floor(world_view.x / tile_extent));
-        const int first_row = static_cast<int>(std::floor(world_view.y / tile_extent));
-        const int past_last_column = static_cast<int>(std::ceil((world_view.x + world_view.width) / tile_extent));
-        const int past_last_row = static_cast<int>(std::ceil((world_view.y + world_view.height) / tile_extent));
+        const float tile_extent_x = static_cast<float>(tile_width);
+        const float tile_extent_y = static_cast<float>(tile_height);
+        const int first_column = static_cast<int>(std::floor(world_view.x / tile_extent_x));
+        const int first_row = static_cast<int>(std::floor(world_view.y / tile_extent_y));
+        const int past_last_column = static_cast<int>(std::ceil((world_view.x + world_view.width) / tile_extent_x));
+        const int past_last_row = static_cast<int>(std::ceil((world_view.y + world_view.height) / tile_extent_y));
 
         return {
             std::clamp(first_column, 0, width_),

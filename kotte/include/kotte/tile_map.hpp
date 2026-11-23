@@ -38,7 +38,8 @@ namespace kotte
         [[nodiscard]] Tile& at(int x, int y);
         [[nodiscard]] const Tile& at(int x, int y) const;
 
-        [[nodiscard]] TileRange tiles_overlapping(Rectangle world_view, int tile_size) const noexcept;
+        [[nodiscard]] TileRange tiles_overlapping(
+            Rectangle world_view, int tile_width, int tile_height) const noexcept;
 
     private:
         [[nodiscard]] std::size_t index(int x, int y) const;
