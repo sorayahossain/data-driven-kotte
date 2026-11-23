@@ -15,6 +15,7 @@ namespace kotte
         int height,
         std::string_view title,
         const Config& config,
+        const Level& level,
         int target_fps)
         : window_{width, height, title, target_fps}
         , input_{config}
@@ -39,7 +40,7 @@ namespace kotte
         // reads place_bomb, these two bind() calls can move into Input's
         // constructor too and disappear from here.
 
-        populate_entities();
+        populate_entities(level);
         initialize_enemies();
     }
 
@@ -553,33 +554,25 @@ namespace kotte
         DrawText(diagnostics.c_str(), 10, window_.height() - 30, 20, LIGHTGRAY);
     }
 
-    void Application::populate_entities(){
+    void Application::populate_entities(const Level& level){
         // Match the generation density so initial creation does not repeatedly
         // relocate slot storage. Handles remain valid even if this estimate grows.
         entities_.reserve(map_.tile_count() / 4);
 
-        const Entity player_entity{EntityKind::player, {tile_size_ * 2.5f, tile_size_ * 2.5f}};
+        const Entity player_entity{
+            EntityKind::player, tile_centre(level.player_column, level.player_row)};
         player_handle_ = entities_.create(player_entity);
         spatial_grid_.insert(player_handle_, entity_world_bounds(player_entity));
 
-        for(int y = 1; y < map_.height() - 1; ++y){
-            for(int x = 1; x < map_.width() - 1; ++x){
-                if((x == 2 && y == 2) || map_.at(x, y).type != TileType::floor || !random_.coin_flip(0.25f)){
+        for(int y = 0; y < map_.height(); ++y){
+            for(int x = 0; x < map_.width(); ++x){
+                const char symbol = level.at(x, y);
+                if(map_.at(x, y).type != TileType::floor || (symbol != 'E' && symbol != '#')){
                     continue;
                 }
 
-                const std::uint8_t kind_roll = random_.next<20, std::uint8_t>();
-                // Week 3's inert bomb markers are no longer needed: every bomb
-                // now enters the world through the explicit lifetime path.
-                if(kind_roll >= 15 && kind_roll < 19){
-                    continue;
-                }
-                const EntityKind kind = kind_roll < 15 ? EntityKind::crate : EntityKind::enemy;
-                const Vector2 world_position{
-                    static_cast<float>(x * tile_size_ + tile_size_ / 2),
-                    static_cast<float>(y * tile_size_ + tile_size_ / 2)
-                };
-                const Entity new_entity{kind, world_position};
+                const EntityKind kind = symbol == '#' ? EntityKind::crate : EntityKind::enemy;
+                const Entity new_entity{kind, tile_centre(x, y)};
                 const EntityHandle handle = entities_.create(new_entity);
                 spatial_grid_.insert(handle, entity_world_bounds(new_entity));
 

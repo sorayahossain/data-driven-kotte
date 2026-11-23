@@ -5,6 +5,7 @@
 #include "kotte/entity.hpp"
 #include "kotte/entity_store.hpp"
 #include "kotte/input.hpp"
+#include "kotte/level.hpp"
 #include "kotte/random.hpp"
 #include "kotte/renderer.hpp"
 #include "kotte/spatial_grid.hpp"
@@ -40,6 +41,7 @@ namespace kotte
             int window_height,
             std::string_view title,
             const Config& config,
+            const Level& level,
             int target_fps = 0);
 
         Application(const Application&) = delete;
@@ -102,7 +104,7 @@ namespace kotte
             std::uint8_t range);
         void update_camera(float delta_time) noexcept;
         void render();
-        void populate_entities();
+        void populate_entities(const Level& level);
         void initialize_enemies();
         [[nodiscard]] Entity& entity(EntityHandle handle) noexcept;
         [[nodiscard]] const Entity& entity(EntityHandle handle) const noexcept;
