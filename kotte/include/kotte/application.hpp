@@ -121,6 +121,7 @@ namespace kotte
         [[nodiscard]] bool owner_has_active_bomb(EntityHandle owner) const noexcept;
         [[nodiscard]] static Vector2 tile_centre(Vector2 world_position) noexcept;
         [[nodiscard]] static Vector2 tile_centre(int column, int row) noexcept;
+        [[nodiscard]] static Vector2 tile_floor_anchor(int column, int row) noexcept;
         [[nodiscard]] static Color entity_color(EntityKind kind) noexcept;
         [[nodiscard]] static float entity_roundness(EntityKind kind) noexcept;
         static constexpr int tile_size_ = 40;

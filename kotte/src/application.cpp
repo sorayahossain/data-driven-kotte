@@ -572,7 +572,7 @@ namespace kotte
                 }
 
                 const EntityKind kind = symbol == '#' ? EntityKind::crate : EntityKind::enemy;
-                const Entity new_entity{kind, tile_centre(x, y)};
+                const Entity new_entity{kind, tile_floor_anchor(x, y)};
                 const EntityHandle handle = entities_.create(new_entity);
                 spatial_grid_.insert(handle, entity_world_bounds(new_entity));
 
@@ -756,6 +756,21 @@ namespace kotte
         return {
             static_cast<float>(column) * tile_extent + tile_extent / 2.0f,
             static_cast<float>(row) * tile_extent + tile_extent / 2.0f
+        };
+    }
+
+    // A placed entity's world_position is its bottom-centre anchor (see
+    // entity_world_bounds/entity_collision_bounds), not the tile's geometric
+    // centre. Spawning crates/enemies at tile_centre left their collision
+    // box covering only the top half of their own tile, leaving the bottom
+    // half walkable and making their render depth read as half a tile too
+    // far north relative to wall tiles (whose depth is their own bottom
+    // edge) - both the walk-through and the wrong occlusion against walls.
+    Vector2 Application::tile_floor_anchor(int column, int row) noexcept{
+        const float tile_extent = static_cast<float>(tile_size_);
+        return {
+            static_cast<float>(column) * tile_extent + tile_extent / 2.0f,
+            static_cast<float>(row + 1) * tile_extent
         };
     }
 
