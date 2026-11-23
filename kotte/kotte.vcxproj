@@ -114,6 +114,7 @@
     <ClCompile Include="src\tile_map.cpp" />
     <ClCompile Include="src\window.cpp" />
     <ClCompile Include="src\input.cpp" />
+    <ClCompile Include="src\config.cpp" />
   </ItemGroup>
   <!--
     vendor/json_schema_validator isn't header-only, so its sources are
