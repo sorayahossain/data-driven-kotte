@@ -55,6 +55,7 @@ namespace kotte
         , wall_texture_{assets_.texture(AssetId::wall)}
         , crate_texture_{assets_.texture(AssetId::crate)}
         , player_sprite_{assets_.texture(AssetId::player)}
+        , enemy_sprite_{assets_.texture(AssetId::enemy)}
         , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
@@ -262,6 +263,9 @@ namespace kotte
             ++collision_diagnostics_.movement_attempts;
 
             Entity& enemy = entity(enemy_handle);
+            // Enemies never stand still: a blocked enemy turns and keeps
+            // walking, so its walk cycle simply keeps running.
+            enemy.animation_time += delta_time;
             const Rectangle old_world_bounds = entity_world_bounds(enemy);
             // Propose one cardinal movement for this enemy.
             const Vector2 direction = cardinal_vector(enemy.movement_heading);
@@ -538,8 +542,12 @@ namespace kotte
                 source = player_sprite_.frame(
                     visible_candidate->movement_heading, visible_candidate->animation_time);
                 break;
-            case EntityKind::bomb:
             case EntityKind::enemy:
+                texture = enemy_sprite_.texture();
+                source = enemy_sprite_.frame(
+                    visible_candidate->movement_heading, visible_candidate->animation_time);
+                break;
+            case EntityKind::bomb:
                 break;
             }
             renderer_.submit({
@@ -701,15 +709,15 @@ namespace kotte
     Rectangle Application::entity_world_bounds(const Entity& entity) const noexcept{
         Vector2 size{};
         switch(entity.kind){
-        // The player is one spritesheet frame and a crate its whole image,
-        // both drawn at native size. Bomb/enemy remain placeholders until
-        // their art is wired in.
+        // Characters are one spritesheet frame and crates their whole image,
+        // both drawn at native size. The bomb remains a placeholder until its
+        // art is wired in.
         case EntityKind::player: size = player_sprite_.frame_size(); break;
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
         case EntityKind::crate:
             size = {static_cast<float>(crate_texture_.width), static_cast<float>(crate_texture_.height)};
             break;
-        case EntityKind::enemy: size = {28.0f, 30.0f}; break;
+        case EntityKind::enemy: size = enemy_sprite_.frame_size(); break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};
@@ -722,13 +730,15 @@ namespace kotte
         // broad-phase queries conservatively find every possible contact.
         Vector2 size{};
         switch(entity.kind){
-        // The player's footprint around the feet, independent of facing
-        // direction. Its width fills a whole tile so it fits a one-tile
-        // corridor.
-        case EntityKind::player: size = {static_cast<float>(tile_width_), 16.0f}; break;
+        // Characters share one footprint around the feet, independent of
+        // facing direction: enemies are the player's art recoloured. Its
+        // width fills a whole tile so a mover fits a one-tile corridor.
+        case EntityKind::player:
+        case EntityKind::enemy:
+            size = {static_cast<float>(tile_width_), 16.0f};
+            break;
         case EntityKind::bomb: size = {18.0f, 12.0f}; break;
         case EntityKind::crate: size = {32.0f, 32.0f}; break;
-        case EntityKind::enemy: size = {24.0f, 14.0f}; break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};

@@ -130,8 +130,8 @@ namespace kotte
         [[nodiscard]] static Color entity_color(EntityKind kind) noexcept;
         [[nodiscard]] static float entity_roundness(EntityKind kind) noexcept;
         // Matches the native size of the bombman asset pack's floor tiles
-        // (tile_env*_floor.png); wall/block/player art stands taller than a
-        // single tile and is anchored at its base, not squeezed to fit here.
+        // (tile_env*_floor.png); wall, crate and character art stands taller
+        // than a single tile and is anchored at its base, not squeezed to fit.
         static constexpr int tile_width_ = 50;
         static constexpr int tile_height_ = 45;
         static constexpr int spatial_cell_tiles_ = 8;
@@ -160,6 +160,7 @@ namespace kotte
         Texture2D wall_texture_;
         Texture2D crate_texture_;
         CharacterSprite player_sprite_;
+        CharacterSprite enemy_sprite_;
         Input input_;
         Camera camera_;
         Random random_;
