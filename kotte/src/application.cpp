@@ -5,89 +5,12 @@
 #include <cmath>
 #include <format>
 #include <raymath.h>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace kotte
 {
-    // Plain global slots, one per texture, filled once by load_textures()
-    // right after the window exists. No caching, no lazy loading, nothing
-    // clever - that's deliberate for now. Proper asset management (a loader
-    // that owns and shares textures by name) comes in a later lesson.
-    Texture2D tile_floor_texture;
-    Texture2D tile_wall_texture;
-    Texture2D crate_entity_texture;
-
-    Texture2D player_up_texture;
-    Texture2D player_up_walk1_texture;
-    Texture2D player_up_walk2_texture;
-    Texture2D player_up_walk3_texture;
-    Texture2D player_down_texture;
-    Texture2D player_down_walk1_texture;
-    Texture2D player_down_walk2_texture;
-    Texture2D player_down_walk3_texture;
-    Texture2D player_left_texture;
-    Texture2D player_left_walk1_texture;
-    Texture2D player_left_walk3_texture;
-    Texture2D player_right_texture;
-    Texture2D player_right_walk1_texture;
-    Texture2D player_right_walk3_texture;
-
-    void load_textures(){
-        tile_floor_texture = LoadTexture("assets/raw/bombman/tile_env4_floor.png");
-        tile_wall_texture = LoadTexture("assets/raw/bombman/tile_env4_wall.png");
-        crate_entity_texture = LoadTexture("assets/raw/bombman/tile_env4_block.png");
-
-        player_up_texture = LoadTexture("assets/raw/bombman/player_up.png");
-        player_up_walk1_texture = LoadTexture("assets/raw/bombman/player_up_walk1.png");
-        player_up_walk2_texture = LoadTexture("assets/raw/bombman/player_up_walk2.png");
-        player_up_walk3_texture = LoadTexture("assets/raw/bombman/player_up_walk3.png");
-        player_down_texture = LoadTexture("assets/raw/bombman/player_down.png");
-        player_down_walk1_texture = LoadTexture("assets/raw/bombman/player_down_walk1.png");
-        player_down_walk2_texture = LoadTexture("assets/raw/bombman/player_down_walk2.png");
-        player_down_walk3_texture = LoadTexture("assets/raw/bombman/player_down_walk3.png");
-        player_left_texture = LoadTexture("assets/raw/bombman/player_left.png");
-        player_left_walk1_texture = LoadTexture("assets/raw/bombman/player_left_walk1.png");
-        player_left_walk3_texture = LoadTexture("assets/raw/bombman/player_left_walk3.png");
-        player_right_texture = LoadTexture("assets/raw/bombman/player_right.png");
-        player_right_walk1_texture = LoadTexture("assets/raw/bombman/player_right_walk1.png");
-        player_right_walk3_texture = LoadTexture("assets/raw/bombman/player_right_walk3.png");
-    }
-
-    // frame: 0 = idle, 1/2/3 = the matching walk pose. Left/right have no
-    // walk2 art; their idle pose doubles as that mid-stride frame.
-    [[nodiscard]] const Texture2D& player_entity_texture(CardinalDirection facing, int frame){
-        switch(facing){
-        case CardinalDirection::up:
-            switch(frame){
-            case 1: return player_up_walk1_texture;
-            case 2: return player_up_walk2_texture;
-            case 3: return player_up_walk3_texture;
-            default: return player_up_texture;
-            }
-        case CardinalDirection::down:
-            switch(frame){
-            case 1: return player_down_walk1_texture;
-            case 2: return player_down_walk2_texture;
-            case 3: return player_down_walk3_texture;
-            default: return player_down_texture;
-            }
-        case CardinalDirection::left:
-            switch(frame){
-            case 1: return player_left_walk1_texture;
-            case 3: return player_left_walk3_texture;
-            default: return player_left_texture;
-            }
-        case CardinalDirection::right:
-            switch(frame){
-            case 1: return player_right_walk1_texture;
-            case 3: return player_right_walk3_texture;
-            default: return player_right_texture;
-            }
-        }
-        return player_down_texture;
-    }
-
     // Computes a tile texture's destination at its native size, anchored
     // to the bottom of the cell and centred horizontally. Floor art
     // matches the cell exactly; wall art stands taller and is meant to
@@ -118,31 +41,27 @@ namespace kotte
         player_entity.animation_time += delta_time;
     }
 
-    [[nodiscard]] int player_entity_walk_frame(float animation_time){
-        if(animation_time <= 0.0f){
-            return 0;
-        }
-
-        constexpr float frame_seconds = 0.12f;
-        constexpr int walk_cycle[4] = {1, 2, 3, 2};
-        const int step = static_cast<int>(animation_time / frame_seconds) % 4;
-        return walk_cycle[step];
-    }
-
     Application::Application(
         int width,
         int height,
         std::string_view title,
         const Config& config,
         const Level& level,
+        const AssetRegistry& asset_registry,
         int target_fps)
         : window_{width, height, title, target_fps}
+        , assets_{asset_registry}
+        , floor_texture_{assets_.texture(AssetId::floor)}
+        , wall_texture_{assets_.texture(AssetId::wall)}
+        , crate_texture_{assets_.texture(AssetId::crate)}
+        , player_sprite_{assets_.texture(AssetId::player)}
+        , enemy_sprite_{assets_.texture(AssetId::enemy)}
         , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
-        , map_{make_room(
-            static_cast<int>(config.tile_map_width),
-            static_cast<int>(config.tile_map_height))}
+        // The level's outer ring is always wall; LDtk only describes what
+        // stands on the floor inside it (see populate_entities).
+        , map_{make_room(level.width, level.height)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_width_),
             static_cast<float>(map_.height() * tile_height_)}, spatial_cell_size_}
@@ -158,7 +77,6 @@ namespace kotte
         // reads place_bomb, these two bind() calls can move into Input's
         // constructor too and disappear from here.
 
-        load_textures();
         populate_entities(level);
         initialize_enemies();
     }
@@ -307,12 +225,11 @@ namespace kotte
 
         const Rectangle player_bounds = entity_collision_bounds(player_entity);
         const Vector2 bounds_offset = player_entity.world_position - Vector2{player_bounds.x, player_bounds.y};
-        const float floor_left = static_cast<float>(tile_width_);
-        const float floor_top = static_cast<float>(tile_height_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
-        const Vector2 minimum_position{floor_left + bounds_offset.x, floor_top + bounds_offset.y};
-        const Vector2 maximum_position{floor_right - bounds_offset.x, floor_bottom};
+        const Rectangle walkable = walkable_world_bounds();
+        const Vector2 minimum_position{walkable.x + bounds_offset.x, walkable.y + bounds_offset.y};
+        const Vector2 maximum_position{
+            walkable.x + walkable.width - bounds_offset.x,
+            walkable.y + walkable.height};
         player_entity.world_position = Vector2Clamp(player_entity.world_position, minimum_position, maximum_position);
 
         const Rectangle new_world_bounds = entity_world_bounds(player_entity);
@@ -346,6 +263,9 @@ namespace kotte
             ++collision_diagnostics_.movement_attempts;
 
             Entity& enemy = entity(enemy_handle);
+            // Enemies never stand still: a blocked enemy turns and keeps
+            // walking, so its walk cycle simply keeps running.
+            enemy.animation_time += delta_time;
             const Rectangle old_world_bounds = entity_world_bounds(enemy);
             // Propose one cardinal movement for this enemy.
             const Vector2 direction = cardinal_vector(enemy.movement_heading);
@@ -537,7 +457,7 @@ namespace kotte
                 const Vector2 tile_screen_position = camera_.world_to_screen(tile_world_position);
 
                 if(tile.type == TileType::wall){
-                    const Texture2D& texture = tile_wall_texture;
+                    const Texture2D& texture = wall_texture_;
                     const Rectangle destination = tile_texture_destination(
                         texture, tile_screen_position, tile_width_, tile_height_);
                     // Depth is the tile's own bottom edge in world space, the
@@ -547,7 +467,7 @@ namespace kotte
                     const float depth = static_cast<float>((y + 1) * tile_height_);
                     renderer_.submit({destination, wall_color_, RenderLayer::world, depth, 0.0f, texture});
                 } else {
-                    const Texture2D& texture = tile_floor_texture;
+                    const Texture2D& texture = floor_texture_;
                     const Rectangle destination = tile_texture_destination(
                         texture, tile_screen_position, tile_width_, tile_height_);
                     const Rectangle source{
@@ -612,17 +532,22 @@ namespace kotte
                 ? RenderLayer::ground
                 : RenderLayer::world;
             Texture2D texture{};
+            Rectangle source{};
             switch(visible_candidate->kind){
             case EntityKind::crate:
-                texture = crate_entity_texture;
+                texture = crate_texture_;
                 break;
             case EntityKind::player:
-                texture = player_entity_texture(
-                    visible_candidate->movement_heading,
-                    player_entity_walk_frame(visible_candidate->animation_time));
+                texture = player_sprite_.texture();
+                source = player_sprite_.frame(
+                    visible_candidate->movement_heading, visible_candidate->animation_time);
+                break;
+            case EntityKind::enemy:
+                texture = enemy_sprite_.texture();
+                source = enemy_sprite_.frame(
+                    visible_candidate->movement_heading, visible_candidate->animation_time);
                 break;
             case EntityKind::bomb:
-            case EntityKind::enemy:
                 break;
             }
             renderer_.submit({
@@ -631,7 +556,8 @@ namespace kotte
                 layer,
                 visible_candidate->world_position.y,
                 entity_roundness(visible_candidate->kind),
-                texture
+                texture,
+                source
             });
         }
         renderer_.sort();
@@ -704,33 +630,49 @@ namespace kotte
     }
 
     void Application::populate_entities(const Level& level){
-        // Match the generation density so initial creation does not repeatedly
-        // relocate slot storage. Handles remain valid even if this estimate grows.
-        entities_.reserve(map_.tile_count() / 4);
+        // Reserve for everything the level spawns so initial creation does not
+        // repeatedly relocate slot storage. Handles remain valid regardless.
+        entities_.reserve(1 + level.enemy_spawns.size() + level.crates.size());
+
+        // LDtk has no walls, so whatever it places on a wall tile (the level
+        // designer may well frame the level with crates) is dropped: walls
+        // win. Only a player there is an error, since nothing could be played.
+        const auto on_wall = [this](TilePosition position){
+            return map_.at(position.column, position.row).type == TileType::wall;
+        };
+        if(on_wall(level.player_spawn)){
+            throw std::runtime_error{"The player starts on the level's outer wall"};
+        }
 
         const Entity player_entity{
-            EntityKind::player,
-            tile_centre(level.player_column, level.player_row),
-            CardinalDirection::down};
+            .kind = EntityKind::player,
+            .world_position = tile_centre(level.player_spawn.column, level.player_spawn.row),
+            .movement_heading = CardinalDirection::down};
         player_handle_ = entities_.create(player_entity);
         spatial_grid_.insert(player_handle_, entity_world_bounds(player_entity));
 
-        for(int y = 0; y < map_.height(); ++y){
-            for(int x = 0; x < map_.width(); ++x){
-                const char symbol = level.at(x, y);
-                if(map_.at(x, y).type != TileType::floor || (symbol != 'E' && symbol != '#')){
-                    continue;
-                }
-
-                const EntityKind kind = symbol == '#' ? EntityKind::crate : EntityKind::enemy;
-                const Entity new_entity{kind, tile_floor_anchor(x, y)};
-                const EntityHandle handle = entities_.create(new_entity);
-                spatial_grid_.insert(handle, entity_world_bounds(new_entity));
-
-                if(kind == EntityKind::enemy){
-                    enemy_handles_.push_back(handle);
-                }
+        for(const TilePosition crate : level.crates){
+            if(on_wall(crate)){
+                continue;
             }
+            const Entity new_entity{
+                .kind = EntityKind::crate,
+                .world_position = tile_floor_anchor(crate.column, crate.row)};
+            const EntityHandle handle = entities_.create(new_entity);
+            spatial_grid_.insert(handle, entity_world_bounds(new_entity));
+        }
+
+        enemy_handles_.reserve(level.enemy_spawns.size());
+        for(const TilePosition enemy_spawn : level.enemy_spawns){
+            if(on_wall(enemy_spawn)){
+                continue;
+            }
+            const Entity new_entity{
+                .kind = EntityKind::enemy,
+                .world_position = tile_floor_anchor(enemy_spawn.column, enemy_spawn.row)};
+            const EntityHandle handle = entities_.create(new_entity);
+            spatial_grid_.insert(handle, entity_world_bounds(new_entity));
+            enemy_handles_.push_back(handle);
         }
     }
 
@@ -767,13 +709,15 @@ namespace kotte
     Rectangle Application::entity_world_bounds(const Entity& entity) const noexcept{
         Vector2 size{};
         switch(entity.kind){
-        // Matches the bombman asset pack's canvases: player_*.png (60x94) and
-        // tile_env4_block.png (52x67). Bomb/enemy remain placeholders until
-        // their art is wired in.
-        case EntityKind::player: size = {60.0f, 94.0f}; break;
+        // Characters are one spritesheet frame and crates their whole image,
+        // both drawn at native size. The bomb remains a placeholder until its
+        // art is wired in.
+        case EntityKind::player: size = player_sprite_.frame_size(); break;
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
-        case EntityKind::crate: size = {52.0f, 67.0f}; break;
-        case EntityKind::enemy: size = {28.0f, 30.0f}; break;
+        case EntityKind::crate:
+            size = {static_cast<float>(crate_texture_.width), static_cast<float>(crate_texture_.height)};
+            break;
+        case EntityKind::enemy: size = enemy_sprite_.frame_size(); break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};
@@ -786,16 +730,29 @@ namespace kotte
         // broad-phase queries conservatively find every possible contact.
         Vector2 size{};
         switch(entity.kind){
-        // Measured from player_*.png's opaque pixels around the feet (~90%
-        // of the 94px canvas height); independent of facing direction.
-        case EntityKind::player: size = {50.0f, 16.0f}; break; // width maxed to tile_width_ - 1px
+        // Characters share one footprint around the feet, independent of
+        // facing direction: enemies are the player's art recoloured. Its
+        // width fills a whole tile so a mover fits a one-tile corridor.
+        case EntityKind::player:
+        case EntityKind::enemy:
+            size = {static_cast<float>(tile_width_), 16.0f};
+            break;
         case EntityKind::bomb: size = {18.0f, 12.0f}; break;
         case EntityKind::crate: size = {32.0f, 32.0f}; break;
-        case EntityKind::enemy: size = {24.0f, 14.0f}; break;
         }
 
         const Vector2 top_left = entity.world_position - Vector2{size.x / 2.0f, size.y};
         return {top_left.x, top_left.y, size.x, size.y};
+    }
+
+    // The floor inside the one-tile wall ring around the map.
+    Rectangle Application::walkable_world_bounds() const noexcept{
+        return {
+            static_cast<float>(tile_width_),
+            static_cast<float>(tile_height_),
+            static_cast<float>((map_.width() - 2) * tile_width_),
+            static_cast<float>((map_.height() - 2) * tile_height_)
+        };
     }
 
     bool Application::entity_movement_is_blocked(
@@ -809,14 +766,11 @@ namespace kotte
         // visual bounds can stand taller than a tile and legitimately overlap
         // a wall's tile row above the entity without a real contact.
         const Rectangle proposed_collision_bounds = entity_collision_bounds(proposed_entity);
-        const float floor_left = static_cast<float>(tile_width_);
-        const float floor_top = static_cast<float>(tile_height_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
-        const bool leaves_room = proposed_collision_bounds.x < floor_left
-            || proposed_collision_bounds.y < floor_top
-            || proposed_collision_bounds.x + proposed_collision_bounds.width > floor_right
-            || proposed_collision_bounds.y + proposed_collision_bounds.height > floor_bottom;
+        const Rectangle walkable = walkable_world_bounds();
+        const bool leaves_room = proposed_collision_bounds.x < walkable.x
+            || proposed_collision_bounds.y < walkable.y
+            || proposed_collision_bounds.x + proposed_collision_bounds.width > walkable.x + walkable.width
+            || proposed_collision_bounds.y + proposed_collision_bounds.height > walkable.y + walkable.height;
         if(leaves_room){
             ++collision_diagnostics_.boundary_blocks;
             return true;

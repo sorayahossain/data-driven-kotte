@@ -22,6 +22,10 @@ namespace kotte
         // An invalid (default-constructed) texture means "no art yet": the
         // command falls back to a plain rounded rectangle in `color`.
         Texture2D texture{};
+        // The part of `texture` to draw, e.g. one frame of a spritesheet. An
+        // empty (default) rectangle draws the whole texture; a negative
+        // width/height flips the source, as in DrawTexturePro.
+        Rectangle source{};
     };
 
     class Renderer final {

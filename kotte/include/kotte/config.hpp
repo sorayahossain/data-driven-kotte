@@ -15,9 +15,9 @@ namespace kotte
         std::string quit;
     };
 
+    // The map's size is not configured here: it is the level's size, read
+    // from the LDtk project (see Level::from_ldtk).
     struct Config {
-        std::int64_t tile_map_width = 0;
-        std::int64_t tile_map_height = 0;
         std::int64_t seed = 0;
         KeyBindings input;
     };

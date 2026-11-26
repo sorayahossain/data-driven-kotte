@@ -116,6 +116,10 @@
     <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\level.cpp" />
+    <ClCompile Include="src\ldtk.cpp" />
+    <ClCompile Include="src\asset_registry.cpp" />
+    <ClCompile Include="src\asset_manager.cpp" />
+    <ClCompile Include="src\character_sprite.cpp" />
   </ItemGroup>
   <!--
     vendor/json_schema_validator isn't header-only, so its sources are
@@ -162,6 +166,10 @@
     <ClInclude Include="include\kotte\window.hpp" />
     <ClInclude Include="include\kotte\input.hpp" />
     <ClInclude Include="include\kotte\level.hpp" />
+    <ClInclude Include="include\kotte\ldtk.hpp" />
+    <ClInclude Include="include\kotte\asset_registry.hpp" />
+    <ClInclude Include="include\kotte\asset_manager.hpp" />
+    <ClInclude Include="include\kotte\character_sprite.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\vendor\json_schema_validator\src\json-patch.hpp" />
