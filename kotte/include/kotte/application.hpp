@@ -3,6 +3,7 @@
 #include "kotte/asset_manager.hpp"
 #include "kotte/asset_registry.hpp"
 #include "kotte/camera.hpp"
+#include "kotte/character_sprite.hpp"
 #include "kotte/config.hpp"
 #include "kotte/entity.hpp"
 #include "kotte/entity_store.hpp"
@@ -158,6 +159,7 @@ namespace kotte
         Texture2D floor_texture_;
         Texture2D wall_texture_;
         Texture2D crate_texture_;
+        CharacterSprite player_sprite_;
         Input input_;
         Camera camera_;
         Random random_;

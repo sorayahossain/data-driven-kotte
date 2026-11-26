@@ -24,10 +24,16 @@ namespace kotte
     void Renderer::execute() const{
         for(const RenderCommand& command : commands_){
             if(IsTextureValid(command.texture)){
-                const Rectangle source{
-                    0.0f, 0.0f,
-                    static_cast<float>(command.texture.width),
-                    static_cast<float>(command.texture.height)};
+                // Only the default {0,0,0,0} means "no source". A negative
+                // width/height is raylib's way to flip a source, so it must
+                // pass through untouched.
+                const bool whole_texture = command.source.width == 0.0f && command.source.height == 0.0f;
+                const Rectangle source = whole_texture
+                    ? Rectangle{
+                        0.0f, 0.0f,
+                        static_cast<float>(command.texture.width),
+                        static_cast<float>(command.texture.height)}
+                    : command.source;
                 DrawTexturePro(command.texture, source, command.screen_bounds, {0.0f, 0.0f}, 0.0f, WHITE);
                 continue;
             }

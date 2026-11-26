@@ -57,6 +57,9 @@
     <ClCompile Include="src\asset_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\character_sprite.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\kotte\window.hpp">
@@ -105,6 +108,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\kotte\asset_manager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\kotte\character_sprite.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

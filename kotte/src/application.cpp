@@ -11,75 +11,6 @@
 
 namespace kotte
 {
-    // The player's walk-cycle frames are still plain global slots, one per
-    // texture, filled once by load_textures() right after the window
-    // exists. Floor, wall and crate art already comes from the AssetManager.
-    Texture2D player_up_texture;
-    Texture2D player_up_walk1_texture;
-    Texture2D player_up_walk2_texture;
-    Texture2D player_up_walk3_texture;
-    Texture2D player_down_texture;
-    Texture2D player_down_walk1_texture;
-    Texture2D player_down_walk2_texture;
-    Texture2D player_down_walk3_texture;
-    Texture2D player_left_texture;
-    Texture2D player_left_walk1_texture;
-    Texture2D player_left_walk3_texture;
-    Texture2D player_right_texture;
-    Texture2D player_right_walk1_texture;
-    Texture2D player_right_walk3_texture;
-
-    void load_textures(){
-        player_up_texture = LoadTexture("assets/raw/bombman/player_up.png");
-        player_up_walk1_texture = LoadTexture("assets/raw/bombman/player_up_walk1.png");
-        player_up_walk2_texture = LoadTexture("assets/raw/bombman/player_up_walk2.png");
-        player_up_walk3_texture = LoadTexture("assets/raw/bombman/player_up_walk3.png");
-        player_down_texture = LoadTexture("assets/raw/bombman/player_down.png");
-        player_down_walk1_texture = LoadTexture("assets/raw/bombman/player_down_walk1.png");
-        player_down_walk2_texture = LoadTexture("assets/raw/bombman/player_down_walk2.png");
-        player_down_walk3_texture = LoadTexture("assets/raw/bombman/player_down_walk3.png");
-        player_left_texture = LoadTexture("assets/raw/bombman/player_left.png");
-        player_left_walk1_texture = LoadTexture("assets/raw/bombman/player_left_walk1.png");
-        player_left_walk3_texture = LoadTexture("assets/raw/bombman/player_left_walk3.png");
-        player_right_texture = LoadTexture("assets/raw/bombman/player_right.png");
-        player_right_walk1_texture = LoadTexture("assets/raw/bombman/player_right_walk1.png");
-        player_right_walk3_texture = LoadTexture("assets/raw/bombman/player_right_walk3.png");
-    }
-
-    // frame: 0 = idle, 1/2/3 = the matching walk pose. Left/right have no
-    // walk2 art; their idle pose doubles as that mid-stride frame.
-    [[nodiscard]] const Texture2D& player_entity_texture(CardinalDirection facing, int frame){
-        switch(facing){
-        case CardinalDirection::up:
-            switch(frame){
-            case 1: return player_up_walk1_texture;
-            case 2: return player_up_walk2_texture;
-            case 3: return player_up_walk3_texture;
-            default: return player_up_texture;
-            }
-        case CardinalDirection::down:
-            switch(frame){
-            case 1: return player_down_walk1_texture;
-            case 2: return player_down_walk2_texture;
-            case 3: return player_down_walk3_texture;
-            default: return player_down_texture;
-            }
-        case CardinalDirection::left:
-            switch(frame){
-            case 1: return player_left_walk1_texture;
-            case 3: return player_left_walk3_texture;
-            default: return player_left_texture;
-            }
-        case CardinalDirection::right:
-            switch(frame){
-            case 1: return player_right_walk1_texture;
-            case 3: return player_right_walk3_texture;
-            default: return player_right_texture;
-            }
-        }
-        return player_down_texture;
-    }
-
     // Computes a tile texture's destination at its native size, anchored
     // to the bottom of the cell and centred horizontally. Floor art
     // matches the cell exactly; wall art stands taller and is meant to
@@ -110,17 +41,6 @@ namespace kotte
         player_entity.animation_time += delta_time;
     }
 
-    [[nodiscard]] int player_entity_walk_frame(float animation_time){
-        if(animation_time <= 0.0f){
-            return 0;
-        }
-
-        constexpr float frame_seconds = 0.12f;
-        constexpr int walk_cycle[4] = {1, 2, 3, 2};
-        const int step = static_cast<int>(animation_time / frame_seconds) % 4;
-        return walk_cycle[step];
-    }
-
     Application::Application(
         int width,
         int height,
@@ -134,6 +54,7 @@ namespace kotte
         , floor_texture_{assets_.texture(AssetId::floor)}
         , wall_texture_{assets_.texture(AssetId::wall)}
         , crate_texture_{assets_.texture(AssetId::crate)}
+        , player_sprite_{assets_.texture(AssetId::player)}
         , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
@@ -155,7 +76,6 @@ namespace kotte
         // reads place_bomb, these two bind() calls can move into Input's
         // constructor too and disappear from here.
 
-        load_textures();
         populate_entities(level);
         initialize_enemies();
     }
@@ -608,14 +528,15 @@ namespace kotte
                 ? RenderLayer::ground
                 : RenderLayer::world;
             Texture2D texture{};
+            Rectangle source{};
             switch(visible_candidate->kind){
             case EntityKind::crate:
                 texture = crate_texture_;
                 break;
             case EntityKind::player:
-                texture = player_entity_texture(
-                    visible_candidate->movement_heading,
-                    player_entity_walk_frame(visible_candidate->animation_time));
+                texture = player_sprite_.texture();
+                source = player_sprite_.frame(
+                    visible_candidate->movement_heading, visible_candidate->animation_time);
                 break;
             case EntityKind::bomb:
             case EntityKind::enemy:
@@ -627,7 +548,8 @@ namespace kotte
                 layer,
                 visible_candidate->world_position.y,
                 entity_roundness(visible_candidate->kind),
-                texture
+                texture,
+                source
             });
         }
         renderer_.sort();
@@ -779,10 +701,10 @@ namespace kotte
     Rectangle Application::entity_world_bounds(const Entity& entity) const noexcept{
         Vector2 size{};
         switch(entity.kind){
-        // The player matches the bombman asset pack's canvases
-        // (player_*.png, 60x94) and a crate is its whole image, at native
-        // size. Bomb/enemy remain placeholders until their art is wired in.
-        case EntityKind::player: size = {60.0f, 94.0f}; break;
+        // The player is one spritesheet frame and a crate its whole image,
+        // both drawn at native size. Bomb/enemy remain placeholders until
+        // their art is wired in.
+        case EntityKind::player: size = player_sprite_.frame_size(); break;
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
         case EntityKind::crate:
             size = {static_cast<float>(crate_texture_.width), static_cast<float>(crate_texture_.height)};
@@ -800,9 +722,10 @@ namespace kotte
         // broad-phase queries conservatively find every possible contact.
         Vector2 size{};
         switch(entity.kind){
-        // Measured from player_*.png's opaque pixels around the feet (~90%
-        // of the 94px canvas height); independent of facing direction.
-        case EntityKind::player: size = {50.0f, 16.0f}; break; // width maxed to tile_width_ - 1px
+        // The player's footprint around the feet, independent of facing
+        // direction. Its width fills a whole tile so it fits a one-tile
+        // corridor.
+        case EntityKind::player: size = {static_cast<float>(tile_width_), 16.0f}; break;
         case EntityKind::bomb: size = {18.0f, 12.0f}; break;
         case EntityKind::crate: size = {32.0f, 32.0f}; break;
         case EntityKind::enemy: size = {24.0f, 14.0f}; break;
