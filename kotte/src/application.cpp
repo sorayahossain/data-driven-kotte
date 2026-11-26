@@ -11,14 +11,9 @@
 
 namespace kotte
 {
-    // Plain global slots, one per texture, filled once by load_textures()
-    // right after the window exists. No caching, no lazy loading, nothing
-    // clever - that's deliberate for now. Proper asset management (a loader
-    // that owns and shares textures by name) comes in a later lesson.
-    Texture2D tile_floor_texture;
-    Texture2D tile_wall_texture;
-    Texture2D crate_entity_texture;
-
+    // The player's walk-cycle frames are still plain global slots, one per
+    // texture, filled once by load_textures() right after the window
+    // exists. Floor, wall and crate art already comes from the AssetManager.
     Texture2D player_up_texture;
     Texture2D player_up_walk1_texture;
     Texture2D player_up_walk2_texture;
@@ -35,10 +30,6 @@ namespace kotte
     Texture2D player_right_walk3_texture;
 
     void load_textures(){
-        tile_floor_texture = LoadTexture("assets/raw/bombman/tile_env4_floor.png");
-        tile_wall_texture = LoadTexture("assets/raw/bombman/tile_env4_wall.png");
-        crate_entity_texture = LoadTexture("assets/raw/bombman/tile_env4_block.png");
-
         player_up_texture = LoadTexture("assets/raw/bombman/player_up.png");
         player_up_walk1_texture = LoadTexture("assets/raw/bombman/player_up_walk1.png");
         player_up_walk2_texture = LoadTexture("assets/raw/bombman/player_up_walk2.png");
@@ -136,8 +127,13 @@ namespace kotte
         std::string_view title,
         const Config& config,
         const Level& level,
+        const AssetRegistry& asset_registry,
         int target_fps)
         : window_{width, height, title, target_fps}
+        , assets_{asset_registry}
+        , floor_texture_{assets_.texture(AssetId::floor)}
+        , wall_texture_{assets_.texture(AssetId::wall)}
+        , crate_texture_{assets_.texture(AssetId::crate)}
         , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
@@ -537,7 +533,7 @@ namespace kotte
                 const Vector2 tile_screen_position = camera_.world_to_screen(tile_world_position);
 
                 if(tile.type == TileType::wall){
-                    const Texture2D& texture = tile_wall_texture;
+                    const Texture2D& texture = wall_texture_;
                     const Rectangle destination = tile_texture_destination(
                         texture, tile_screen_position, tile_width_, tile_height_);
                     // Depth is the tile's own bottom edge in world space, the
@@ -547,7 +543,7 @@ namespace kotte
                     const float depth = static_cast<float>((y + 1) * tile_height_);
                     renderer_.submit({destination, wall_color_, RenderLayer::world, depth, 0.0f, texture});
                 } else {
-                    const Texture2D& texture = tile_floor_texture;
+                    const Texture2D& texture = floor_texture_;
                     const Rectangle destination = tile_texture_destination(
                         texture, tile_screen_position, tile_width_, tile_height_);
                     const Rectangle source{
@@ -614,7 +610,7 @@ namespace kotte
             Texture2D texture{};
             switch(visible_candidate->kind){
             case EntityKind::crate:
-                texture = crate_entity_texture;
+                texture = crate_texture_;
                 break;
             case EntityKind::player:
                 texture = player_entity_texture(
@@ -783,12 +779,14 @@ namespace kotte
     Rectangle Application::entity_world_bounds(const Entity& entity) const noexcept{
         Vector2 size{};
         switch(entity.kind){
-        // Matches the bombman asset pack's canvases: player_*.png (60x94) and
-        // tile_env4_block.png (52x67). Bomb/enemy remain placeholders until
-        // their art is wired in.
+        // The player matches the bombman asset pack's canvases
+        // (player_*.png, 60x94) and a crate is its whole image, at native
+        // size. Bomb/enemy remain placeholders until their art is wired in.
         case EntityKind::player: size = {60.0f, 94.0f}; break;
         case EntityKind::bomb: size = {22.0f, 22.0f}; break;
-        case EntityKind::crate: size = {52.0f, 67.0f}; break;
+        case EntityKind::crate:
+            size = {static_cast<float>(crate_texture_.width), static_cast<float>(crate_texture_.height)};
+            break;
         case EntityKind::enemy: size = {28.0f, 30.0f}; break;
         }
 

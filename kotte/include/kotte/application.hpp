@@ -1,5 +1,7 @@
 #pragma once
 
+#include "kotte/asset_manager.hpp"
+#include "kotte/asset_registry.hpp"
 #include "kotte/camera.hpp"
 #include "kotte/config.hpp"
 #include "kotte/entity.hpp"
@@ -42,6 +44,7 @@ namespace kotte
             std::string_view title,
             const Config& config,
             const Level& level,
+            const AssetRegistry& asset_registry,
             int target_fps = 0);
 
         Application(const Application&) = delete;
@@ -138,7 +141,8 @@ namespace kotte
         static constexpr std::uint8_t bomb_blast_range_ = 3;
         static constexpr float blast_effect_seconds_ = 0.35f;
         static constexpr Color background_color_{0x11, 0x22, 0x33, 0xff};
-        // Fallback colors used only if a kind's texture fails to load.
+        // Plain-rectangle colors for whatever has no art yet (bombs, blasts);
+        // textured kinds keep one too as a debugging aid.
         static constexpr Color player_color_{0xf2, 0xc1, 0x4e, 0xff};
         static constexpr Color bomb_color_{0x20, 0x24, 0x2a, 0xff};
         static constexpr Color blast_color_{0xf2, 0x8f, 0x3b, 0xe8};
@@ -147,6 +151,13 @@ namespace kotte
         static constexpr Color wall_color_{0x78, 0x5f, 0x47, 0xff};
 
         Window window_; // Constructed first, destroyed last.
+        // Textures belong to the window's GL context, so the manager that
+        // owns them comes right after it. The handles below are non-owning
+        // views into the manager, looked up once at construction.
+        AssetManager assets_;
+        Texture2D floor_texture_;
+        Texture2D wall_texture_;
+        Texture2D crate_texture_;
         Input input_;
         Camera camera_;
         Random random_;
