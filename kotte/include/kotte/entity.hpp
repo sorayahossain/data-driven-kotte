@@ -33,7 +33,7 @@ namespace kotte
         EntityKind kind = EntityKind::crate;
         Vector2 world_position{};
         CardinalDirection movement_heading = CardinalDirection::right;
-        std::optional<BombState> bomb_state;
+        std::optional<BombState> bomb_state{};
         // Seconds since this entity's mover last stood still; drives the
         // player's walk-cycle frame selection. Unused by other kinds for now.
         float animation_time = 0.0f;

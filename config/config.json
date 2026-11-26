@@ -1,6 +1,4 @@
 {
-    "tile_map_width": 17,
-    "tile_map_height": 13,
     "seed": 323453473861,
     "input": {
         "move_up": "W",

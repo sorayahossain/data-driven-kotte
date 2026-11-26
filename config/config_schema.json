@@ -16,16 +16,6 @@
         }
     },
     "properties": {
-        "tile_map_width": {
-            "type": "integer",
-            "minimum": 10,
-            "maximum": 1000
-        },
-        "tile_map_height": {
-            "type": "integer",
-            "minimum": 10,
-            "maximum": 1000
-        },
         "seed": {
             "type": "integer",
             "minimum": 1
@@ -43,5 +33,5 @@
             "required": ["move_up", "move_down", "move_left", "move_right", "place_bomb", "quit"]
         }
     },
-    "required": ["tile_map_width", "tile_map_height", "seed", "input"]
+    "required": ["seed", "input"]
 }

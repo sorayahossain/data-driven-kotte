@@ -112,6 +112,7 @@ namespace kotte
         [[nodiscard]] const Entity& player() const noexcept;
         [[nodiscard]] Rectangle entity_world_bounds(const Entity& entity) const noexcept;
         [[nodiscard]] Rectangle entity_collision_bounds(const Entity& entity) const noexcept;
+        [[nodiscard]] Rectangle walkable_world_bounds() const noexcept;
         [[nodiscard]] bool entity_movement_is_blocked(
             EntityHandle moving_entity_handle,
             Vector2 proposed_position);

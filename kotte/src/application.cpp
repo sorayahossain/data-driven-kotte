@@ -5,6 +5,7 @@
 #include <cmath>
 #include <format>
 #include <raymath.h>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -140,9 +141,9 @@ namespace kotte
         , input_{config}
         , camera_{window_.size()}
         , random_{static_cast<std::uint64_t>(config.seed)}
-        , map_{make_room(
-            static_cast<int>(config.tile_map_width),
-            static_cast<int>(config.tile_map_height))}
+        // The level's outer ring is always wall; LDtk only describes what
+        // stands on the floor inside it (see populate_entities).
+        , map_{make_room(level.width, level.height)}
         , spatial_grid_{{
             static_cast<float>(map_.width() * tile_width_),
             static_cast<float>(map_.height() * tile_height_)}, spatial_cell_size_}
@@ -307,12 +308,11 @@ namespace kotte
 
         const Rectangle player_bounds = entity_collision_bounds(player_entity);
         const Vector2 bounds_offset = player_entity.world_position - Vector2{player_bounds.x, player_bounds.y};
-        const float floor_left = static_cast<float>(tile_width_);
-        const float floor_top = static_cast<float>(tile_height_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
-        const Vector2 minimum_position{floor_left + bounds_offset.x, floor_top + bounds_offset.y};
-        const Vector2 maximum_position{floor_right - bounds_offset.x, floor_bottom};
+        const Rectangle walkable = walkable_world_bounds();
+        const Vector2 minimum_position{walkable.x + bounds_offset.x, walkable.y + bounds_offset.y};
+        const Vector2 maximum_position{
+            walkable.x + walkable.width - bounds_offset.x,
+            walkable.y + walkable.height};
         player_entity.world_position = Vector2Clamp(player_entity.world_position, minimum_position, maximum_position);
 
         const Rectangle new_world_bounds = entity_world_bounds(player_entity);
@@ -704,33 +704,49 @@ namespace kotte
     }
 
     void Application::populate_entities(const Level& level){
-        // Match the generation density so initial creation does not repeatedly
-        // relocate slot storage. Handles remain valid even if this estimate grows.
-        entities_.reserve(map_.tile_count() / 4);
+        // Reserve for everything the level spawns so initial creation does not
+        // repeatedly relocate slot storage. Handles remain valid regardless.
+        entities_.reserve(1 + level.enemy_spawns.size() + level.crates.size());
+
+        // LDtk has no walls, so whatever it places on a wall tile (the level
+        // designer may well frame the level with crates) is dropped: walls
+        // win. Only a player there is an error, since nothing could be played.
+        const auto on_wall = [this](TilePosition position){
+            return map_.at(position.column, position.row).type == TileType::wall;
+        };
+        if(on_wall(level.player_spawn)){
+            throw std::runtime_error{"The player starts on the level's outer wall"};
+        }
 
         const Entity player_entity{
-            EntityKind::player,
-            tile_centre(level.player_column, level.player_row),
-            CardinalDirection::down};
+            .kind = EntityKind::player,
+            .world_position = tile_centre(level.player_spawn.column, level.player_spawn.row),
+            .movement_heading = CardinalDirection::down};
         player_handle_ = entities_.create(player_entity);
         spatial_grid_.insert(player_handle_, entity_world_bounds(player_entity));
 
-        for(int y = 0; y < map_.height(); ++y){
-            for(int x = 0; x < map_.width(); ++x){
-                const char symbol = level.at(x, y);
-                if(map_.at(x, y).type != TileType::floor || (symbol != 'E' && symbol != '#')){
-                    continue;
-                }
-
-                const EntityKind kind = symbol == '#' ? EntityKind::crate : EntityKind::enemy;
-                const Entity new_entity{kind, tile_floor_anchor(x, y)};
-                const EntityHandle handle = entities_.create(new_entity);
-                spatial_grid_.insert(handle, entity_world_bounds(new_entity));
-
-                if(kind == EntityKind::enemy){
-                    enemy_handles_.push_back(handle);
-                }
+        for(const TilePosition crate : level.crates){
+            if(on_wall(crate)){
+                continue;
             }
+            const Entity new_entity{
+                .kind = EntityKind::crate,
+                .world_position = tile_floor_anchor(crate.column, crate.row)};
+            const EntityHandle handle = entities_.create(new_entity);
+            spatial_grid_.insert(handle, entity_world_bounds(new_entity));
+        }
+
+        enemy_handles_.reserve(level.enemy_spawns.size());
+        for(const TilePosition enemy_spawn : level.enemy_spawns){
+            if(on_wall(enemy_spawn)){
+                continue;
+            }
+            const Entity new_entity{
+                .kind = EntityKind::enemy,
+                .world_position = tile_floor_anchor(enemy_spawn.column, enemy_spawn.row)};
+            const EntityHandle handle = entities_.create(new_entity);
+            spatial_grid_.insert(handle, entity_world_bounds(new_entity));
+            enemy_handles_.push_back(handle);
         }
     }
 
@@ -798,6 +814,16 @@ namespace kotte
         return {top_left.x, top_left.y, size.x, size.y};
     }
 
+    // The floor inside the one-tile wall ring around the map.
+    Rectangle Application::walkable_world_bounds() const noexcept{
+        return {
+            static_cast<float>(tile_width_),
+            static_cast<float>(tile_height_),
+            static_cast<float>((map_.width() - 2) * tile_width_),
+            static_cast<float>((map_.height() - 2) * tile_height_)
+        };
+    }
+
     bool Application::entity_movement_is_blocked(
         EntityHandle moving_entity_handle,
         Vector2 proposed_position){
@@ -809,14 +835,11 @@ namespace kotte
         // visual bounds can stand taller than a tile and legitimately overlap
         // a wall's tile row above the entity without a real contact.
         const Rectangle proposed_collision_bounds = entity_collision_bounds(proposed_entity);
-        const float floor_left = static_cast<float>(tile_width_);
-        const float floor_top = static_cast<float>(tile_height_);
-        const float floor_right = static_cast<float>((map_.width() - 1) * tile_width_);
-        const float floor_bottom = static_cast<float>((map_.height() - 1) * tile_height_);
-        const bool leaves_room = proposed_collision_bounds.x < floor_left
-            || proposed_collision_bounds.y < floor_top
-            || proposed_collision_bounds.x + proposed_collision_bounds.width > floor_right
-            || proposed_collision_bounds.y + proposed_collision_bounds.height > floor_bottom;
+        const Rectangle walkable = walkable_world_bounds();
+        const bool leaves_room = proposed_collision_bounds.x < walkable.x
+            || proposed_collision_bounds.y < walkable.y
+            || proposed_collision_bounds.x + proposed_collision_bounds.width > walkable.x + walkable.width
+            || proposed_collision_bounds.y + proposed_collision_bounds.height > walkable.y + walkable.height;
         if(leaves_room){
             ++collision_diagnostics_.boundary_blocks;
             return true;

@@ -22,16 +22,12 @@ namespace kotte
     }
 
     void from_json(const nlohmann::json& json, Config& config){
-        json.at("tile_map_width").get_to(config.tile_map_width);
-        json.at("tile_map_height").get_to(config.tile_map_height);
         json.at("seed").get_to(config.seed);
         json.at("input").get_to(config.input);
     }
 
     void to_json(nlohmann::json& json, const Config& config){
         json = nlohmann::json{
-            {"tile_map_width", config.tile_map_width},
-            {"tile_map_height", config.tile_map_height},
             {"seed", config.seed},
             {"input", config.input},
         };
@@ -39,8 +35,6 @@ namespace kotte
 
     Config default_config(){
         return Config{
-            .tile_map_width = 17,
-            .tile_map_height = 13,
             .seed = 323453473861,
             .input = KeyBindings{
                 .move_up = "W",
